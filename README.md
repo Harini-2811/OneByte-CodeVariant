@@ -63,7 +63,7 @@ There are no action buttons anywhere in the app. Every action is done by draggin
 
 Navigation is plain text links, and answer choices (chips, sliders, inputs), view toggles, tabs and the theme switch stay as direct controls, because they are answers and settings rather than actions.
 
-**Making it obvious:** a yellow guide bar under the header explains the drag-and-drop model until the first successful drop; the first card on a page wiggles and carries a "Drag me onto…" label; every card has grip dots; every zone says what releasing will do.
+**Making it obvious:** every card has grip dots, short grey hints say what to drag where, zones pulse when a matching card is picked up, and every zone says what releasing will do.
 
 How it works (`src/components/Canvas.tsx`, built on dnd-kit):
 - **Mouse, touch and keyboard.** Keyboard users focus a card, press Space or Enter to pick it up, use the arrow keys to jump between zones, and press Space or Enter to drop it (Escape cancels).

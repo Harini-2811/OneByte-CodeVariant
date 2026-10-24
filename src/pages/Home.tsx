@@ -89,7 +89,7 @@ export default function Home() {
             <div className="hero-actions">
             <div className="fu" style={{ ...dl(1.1), marginTop: 30 }}>
               <span className="drag-hint">Drag a blank ticket onto the bench to start <span className="arrow hero-arrow"><Icon d="M5 12h14 M13 6l6 6-6 6" size={16} /></span></span>
-              <div className="row" style={{ marginTop: 10, flexWrap: 'wrap', gap: '46px 22px' }}>
+              <div className="row" style={{ marginTop: 10, flexWrap: 'wrap', gap: 22 }}>
                 <DragCard id="blank" nudge="Drag me onto the bench" data={{ kind: 'blank', label: 'Blank ticket: start a new diagnosis' }}>
                   <div className="tagcard tag-yellow" style={{ clipPath: 'none', borderRadius: 14, padding: '14px 18px', width: 250 }}>
                     <div className="between" style={{ alignItems: 'center', flexWrap: 'nowrap' }}>

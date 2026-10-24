@@ -148,9 +148,8 @@ export function DragCard({ id, data, children, className = '', style, disabled, 
   /** Short hint ("Drag me") shown with a gentle wiggle until the user has completed a first drop. */
   nudge?: string;
 }) {
-  const { seen, active } = useContext(CanvasCtx);
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id, data: { ...data, node: children }, disabled });
-  const showNudge = !!nudge && !seen && !active && !disabled;
+  void nudge; // first-run labels are switched off
   // Keyboard pickup only from the card itself, so Enter on a link or button inside it still works normally.
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.target !== e.currentTarget) return;
@@ -158,8 +157,7 @@ export function DragCard({ id, data, children, className = '', style, disabled, 
   };
   return (
     <div ref={setNodeRef} {...attributes} {...listeners} onKeyDown={onKeyDown} aria-roledescription="draggable card" aria-disabled={disabled || undefined}
-      data-nudge={showNudge ? nudge : undefined}
-      className={`dcard ${isDragging ? 'is-ghost' : ''} ${disabled ? 'is-disabled' : ''} ${showNudge ? 'nudge' : ''} ${className}`} style={style}>
+      className={`dcard ${isDragging ? 'is-ghost' : ''} ${disabled ? 'is-disabled' : ''} ${className}`} style={style}>
       {children}
     </div>
   );
