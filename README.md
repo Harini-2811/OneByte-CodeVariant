@@ -4,7 +4,7 @@
 
 Built for **Code Variant — Build 01, Problem Statement 01: "Fix It First"**.
 
-TRY IT HERE: [Live demo](one-byte-code-variant.vercel.app/)
+TRY IT HERE: [one-byte-code-variant.vercel.app/](https://one-byte-code-variant.vercel.app/)
 
 ---
 
