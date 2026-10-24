@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Route, Routes, useLocation } from 'react-router-dom';
-import { Background, Footer, Header, RouteFocus, Tape } from './components/Shell';
+import { Background, Footer, Header, RouteFocus } from './components/Shell';
 import Home from './pages/Home';
 import Diagnose from './pages/Diagnose';
 import Analysing from './pages/Analysing';
@@ -30,7 +30,6 @@ export default function App() {
     <>
       <a href="#main" className="skip">Skip to content</a>
       <Background />
-      <Tape />
       <RouteFocus />
       <Header />
       {/* Keyed by path, so every page change replays the reveal sequence. */}
