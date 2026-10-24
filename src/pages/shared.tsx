@@ -10,6 +10,7 @@ export const CAT_ICONS: Record<CategoryId, string> = {
   cables: 'M12 22v-5 M9 8V2 M15 8V2 M6 8h12v4a6 6 0 0 1-12 0z',
   kitchen: 'M2 12h20 M20 12v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8 M8 8V6 M12 8V4 M16 8V6',
   accessories: 'M8 6h8v12H8z M9 6l1-4h4l1 4 M9 18l1 4h4l1-4',
+  other: 'M12 2a10 10 0 1 0 0 20a10 10 0 1 0 0-20 M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3 M12 17h.01',
 };
 
 export function Missing({ title = 'Nothing on the bench here.', text = "This item isn't in your current session. Items are kept only until you close the tab." }: { title?: string; text?: string }) {

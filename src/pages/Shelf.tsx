@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CATEGORIES } from '../data/categories';
+import { categoryName } from '../data/categories';
 import { PATHS } from '../data/paths';
 import { evaluate, itemLabel } from '../engine/engine';
 import { useSession } from '../state/session';
@@ -117,7 +117,7 @@ export default function Shelf() {
                       </span>
                     </div>
                     <h2 className="disp" style={{ marginTop: 14, fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em' }}>{itemLabel(x.answers)}</h2>
-                    <p className="muted" style={{ fontSize: 15 }}>{CATEGORIES[x.answers.category].name}. Suggested {PATHS[r.top].name.toLowerCase()} ({r.scores[r.top]}){r.hazard ? ', safety issue' : ''}.</p>
+                    <p className="muted" style={{ fontSize: 15 }}>{categoryName(x.answers)}. Suggested {PATHS[r.top].name.toLowerCase()} ({r.scores[r.top]}){r.hazard ? ', safety issue' : ''}.</p>
                     <div className="row" style={{ marginTop: 14, gap: 8, flexWrap: 'wrap' }}>
                       <Link to={x.chosen ? `/item/${x.id}/plan/${p}` : `/item/${x.id}`} className="btn btn-ink btn-sm">{x.chosen ? 'Open plan' : 'See options'}</Link>
                       <label className="chip" style={{ minHeight: 40, padding: '4px 12px', fontSize: 14, cursor: 'pointer' }}>

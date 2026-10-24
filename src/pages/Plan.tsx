@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { CATEGORIES, getItem } from '../data/categories';
+import { categoryName, itemFor } from '../data/categories';
 import { MATERIALS, planFor, REPURPOSE_IDEAS } from '../data/guides';
 import { PATHS, PATH_ORDER } from '../data/paths';
 import type { CategoryId, PathId } from '../data/types';
@@ -12,7 +12,7 @@ import { Missing } from './shared';
 
 const MATERIAL_FOR: Record<CategoryId, string[]> = {
   electronics: ['ewaste', 'batteries'], appliances: ['ewaste', 'metal'], cables: ['ewaste'], furniture: ['wood', 'metal'],
-  clothing: ['textiles'], kitchen: ['metal', 'glass'], accessories: ['textiles', 'metal', 'plastic'],
+  clothing: ['textiles'], kitchen: ['metal', 'glass'], accessories: ['textiles', 'metal', 'plastic'], other: [],
 };
 
 export default function Plan() {
@@ -25,8 +25,7 @@ export default function Plan() {
 
   const p = path as PathId;
   const a = item.answers;
-  const cat = CATEGORIES[a.category];
-  const it = getItem(a.category, a.itemType);
+  const it = itemFor(a);
   const name = itemLabel(a);
   const blocked = res.blocked[p];
   const mode = res.hazard ? 'pro' : item.mode;
@@ -37,7 +36,8 @@ export default function Plan() {
   const pct = Math.round((done / plan.steps.length) * 100);
   const decided = item.chosen === p;
   const ideas = REPURPOSE_IDEAS.filter((x) => x.category === a.category);
-  const mats = MATERIALS.filter((m) => MATERIAL_FOR[a.category].includes(m.id));
+  const matIds = a.category === 'other' ? (a.powered ? ['ewaste', 'batteries'] : ['metal', 'plastic', 'wood']) : MATERIAL_FOR[a.category];
+  const mats = MATERIALS.filter((m) => matIds.includes(m.id));
 
   const save = () => {
     decide(item.id, p);
@@ -184,7 +184,7 @@ export default function Plan() {
               </div>
             </div>
           )}
-          <p className="muted" style={{ marginTop: 28, fontSize: 14 }}>Estimates are typical ranges for a {it.name.toLowerCase()} in the {cat.name.toLowerCase()} category, not quotes.</p>
+          <p className="muted" style={{ marginTop: 28, fontSize: 14 }}>Estimates are typical ranges for a {it.name.toLowerCase()} in the {categoryName(a).toLowerCase()} category, not quotes.</p>
         </>
       )}
     </section>

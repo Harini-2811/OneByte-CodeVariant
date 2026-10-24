@@ -77,14 +77,6 @@ main { position: relative; z-index: 1; min-height: calc(100vh - 160px); }
 @keyframes blob2 { to { transform: translate(-30vw, 40vh) scale(.9); } }
 @keyframes dust { 0% { opacity: 0; transform: translateY(0); } 15% { opacity: .55; } 85% { opacity: .35; } 100% { opacity: 0; transform: translate(40px, -60vh); } }
 
-/* ---------------- page transition: measuring tape ---------------- */
-.tape { position: fixed; top: 0; left: 0; height: 12px; z-index: 80; pointer-events: none; background-color: #F2C230;
-  background-image: repeating-linear-gradient(90deg, rgba(21,32,28,.75) 0 1px, transparent 1px 8px), repeating-linear-gradient(90deg, #15201C 0 1.5px, transparent 1.5px 40px);
-  background-size: 100% 4px, 100% 8px; background-repeat: no-repeat; border-radius: 0 2px 2px 0; box-shadow: 0 2px 14px rgba(242,194,48,.55);
-  animation: tape 1.5s cubic-bezier(.65,0,.25,1) both; }
-.tape::after { content: ''; position: absolute; right: -3px; top: 0; width: 7px; height: 20px; border-radius: 0 0 3px 3px; background: linear-gradient(180deg, #D7DCD4, #7F887E); }
-@keyframes tape { 0% { width: 0; } 48% { width: 100%; } 62% { width: 100%; opacity: 1; } 100% { width: 0; opacity: .6; } }
-
 /* ---------------- reveal system ---------------- */
 .ln { display: block; overflow: hidden; padding-bottom: .1em; margin-bottom: -.1em; }
 .ln > span { display: inline-block; animation: up 1.2s var(--ease-out) both; }
@@ -247,7 +239,7 @@ dialog.sheet[open] { animation: fu .45s var(--ease-out) both; }
 
 /* ---------------- print: clean action plan ---------------- */
 @media print {
-  .bgfx, .hdr, .ftr, .tape, .noprint, .toasts { display: none !important; }
+  .bgfx, .hdr, .ftr, .noprint, .toasts { display: none !important; }
   body { background: #fff !important; color: #000; }
   .card, .mat { box-shadow: none !important; border: 1px solid #ccc; }
   .mat { background: #fff !important; color: #000 !important; }
@@ -259,7 +251,6 @@ dialog.sheet[open] { animation: fu .45s var(--ease-out) both; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
   .bgfx .grid, .bgfx .blob, .bgfx .lamp, .bgfx .ring, .bgfx .dust, .scan { animation: none !important; }
-  .tape { display: none; }
 }
 
 /* theme switch: circular reveal handled in JS; disable the default cross-fade */

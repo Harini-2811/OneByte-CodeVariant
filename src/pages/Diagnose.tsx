@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { AGE_LABELS, AGE_NOTES, CATEGORIES, CATEGORY_ORDER, CONDITION_LABELS, DIY_LABELS, getItem, PRIORITY_LABELS, SEVERITY_LABELS, TIME_LABELS, USAGE_LABELS, WORKS_LABELS } from '../data/categories';
+import { AGE_LABELS, AGE_NOTES, CATEGORIES, CATEGORY_ORDER, categoryName, CONDITION_LABELS, DIY_LABELS, getItem, isCustom, itemFor, OTHER_ITEM, PRIORITY_LABELS, SEVERITY_LABELS, shopFor, TIME_LABELS, USAGE_LABELS, WORKS_LABELS } from '../data/categories';
 import type { Answers, CategoryId, Severity } from '../data/types';
-import { defaultAnswers } from '../engine/engine';
+import { defaultAnswers, itemLabel } from '../engine/engine';
+import { guess, sketchFor } from '../engine/match';
 import { rupee } from '../engine/format';
 import { useRun } from '../hooks/useRun';
 import { useSession } from '../state/session';
@@ -44,7 +45,7 @@ export default function Diagnose() {
     let picked = false;
     if (cat && CATEGORIES[cat]) {
       a.category = cat;
-      a.itemType = getItem(cat, params.get('item') ?? '').id;
+      a.itemType = cat === 'other' ? OTHER_ITEM : getItem(cat, params.get('item') ?? '').id;
       picked = true;
       const sym = params.get('sym');
       if (sym && CATEGORIES[cat].symptoms.some((x) => x.id === sym)) { a.symptoms = { [sym]: 2 }; s = 2; }
@@ -59,10 +60,14 @@ export default function Diagnose() {
 
   const up = (patch: Partial<Answers>) => setAnswers((a) => ({ ...a, ...patch }));
   const cat = CATEGORIES[answers.category];
-  const item = getItem(answers.category, answers.itemType);
+  const item = itemFor(answers);
+  const custom = isCustom(answers);
   const selected = cat.symptoms.filter((s) => answers.symptoms[s.id]);
   const hazard = selected.some((s) => s.type === 'hazard');
-  const canNext = step === 1 ? hasCat : step === 3 ? selected.length > 0 : true;
+  const nameOk = !custom || answers.name.trim().length >= 2;
+  const canNext = step === 1 ? hasCat && nameOk : step === 3 ? selected.length > 0 : true;
+  const suggestion = custom && answers.name.trim().length >= 3 ? guess(answers.name) : null;
+  const sketch = sketchFor(answers);
   const go = (n: number) => { setStep(n); window.scrollTo({ top: 0, behavior: 'smooth' }); };
 
   const toggleSym = (id: string) => setAnswers((a) => {
@@ -75,6 +80,7 @@ export default function Diagnose() {
   const notes = useMemo(() => {
     if (!hasCat) return ['pick a category to start'];
     const n: string[] = [];
+    if (custom && answers.customPrice) n.push(`about ${rupee(answers.customPrice)} new`);
     if (step >= 2) n.push(`${AGE_NOTES[answers.age]}, ${CONDITION_LABELS[answers.condition].toLowerCase()}`);
     if (step >= 2 && answers.warranty === 'yes') n.push('still under warranty');
     selected.slice(0, 3).forEach((s) => n.push(`${s.label.toLowerCase()} (${SEVERITY_LABELS[answers.symptoms[s.id]].toLowerCase()})${s.type === 'hazard' ? '!' : ''}`));
@@ -83,7 +89,7 @@ export default function Diagnose() {
   }, [hasCat, step, answers, selected]);
 
   const review: [string, string, number][] = [
-    ['Item', `${answers.name.trim() || item.name} (${cat.name.toLowerCase()})`, 1],
+    ['Item', `${itemLabel(answers)} (${categoryName(answers).toLowerCase()})${custom ? `, new about ${rupee(item.newPrice)}` : ''}`, 1],
     ['Age and use', `${AGE_LABELS[answers.age]}, ${USAGE_LABELS[answers.usage].toLowerCase()} use`, 2],
     ['Condition', `${CONDITION_LABELS[answers.condition]}, works ${WORKS_LABELS[answers.works].toLowerCase()}, warranty: ${answers.warranty === 'unsure' ? 'not sure' : answers.warranty}`, 2],
     ['Problems', selected.map((s) => `${s.label} (${SEVERITY_LABELS[answers.symptoms[s.id]].toLowerCase()})`).join(', ') || 'None', 3],
@@ -130,27 +136,62 @@ export default function Diagnose() {
               <div className="grid-auto" style={{ ['--min' as string]: '150px', gap: 10 }}>
                 {CATEGORY_ORDER.map((c, i) => (
                   <button key={c} type="button" className="chip lift fu" aria-pressed={hasCat && answers.category === c}
-                    onClick={() => { setHasCat(true); setAnswers((a) => (a.category === c ? a : { ...a, category: c, itemType: CATEGORIES[c].items[0].id, symptoms: {} })); }}
+                    onClick={() => { setHasCat(true); setAnswers((a) => (a.category === c ? a : { ...a, category: c, itemType: c === 'other' ? OTHER_ITEM : CATEGORIES[c].items[0].id, name: '', customCategory: undefined, customPrice: undefined, symptoms: {} })); }}
                     style={{ ...dl(0.15 + i * 0.05), flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'space-between', minHeight: 100, padding: 16, borderRadius: 14, borderWidth: 2 }}>
                     <Icon d={CAT_ICONS[c]} size={26} width={1.8} />
                     <span style={{ fontSize: 16, lineHeight: 1.2 }}>{CATEGORIES[c].name}</span>
                   </button>
                 ))}
               </div>
-              {hasCat && (
+              {hasCat && answers.category !== 'other' && (
                 <div className="fu" style={{ ...dl(0.05), marginTop: 26 }}>
                   <span className="field-label">Which one?</span>
                   <div className="chip-row">
                     {cat.items.map((it) => (
-                      <button key={it.id} type="button" className="chip round" aria-pressed={answers.itemType === it.id} onClick={() => up({ itemType: it.id })}>{it.name}</button>
+                      <button key={it.id} type="button" className="chip round" aria-pressed={answers.itemType === it.id} onClick={() => up({ itemType: it.id, name: '', customPrice: undefined })}>{it.name}</button>
                     ))}
+                    <button type="button" className="chip round" aria-pressed={answers.itemType === OTHER_ITEM} onClick={() => up({ itemType: OTHER_ITEM, symptoms: {} })}>
+                      <Icon d="M12 5v14 M5 12h14" size={16} width={2.4} />Other
+                    </button>
                   </div>
                 </div>
               )}
-              <label className="fu" style={{ ...dl(0.5), display: 'block', marginTop: 26 }}>
-                <span className="field-label">Give it a name <span className="field-hint">(optional)</span></span>
-                <input className="input" value={answers.name} maxLength={40} onChange={(e) => up({ name: e.target.value })} placeholder={`e.g. My ${item.name.toLowerCase()}`} />
-              </label>
+
+              {hasCat && answers.category === 'other' && (
+                <label className="fu" style={{ ...dl(0.05), display: 'block', marginTop: 26 }}>
+                  <span className="field-label">What kind of thing is it? <span className="field-hint">(optional)</span></span>
+                  <input className="input" value={answers.customCategory ?? ''} maxLength={40} onChange={(e) => up({ customCategory: e.target.value })} placeholder="e.g. Musical instrument, toy, sports gear" />
+                </label>
+              )}
+
+              {hasCat && custom && (
+                <div className="fu" style={{ ...dl(0.1), marginTop: 22 }}>
+                  <label style={{ display: 'block' }}>
+                    <span className="field-label">What is it called?</span>
+                    <input className="input" value={answers.name} maxLength={40} onChange={(e) => up({ name: e.target.value })} placeholder="e.g. Guitar, printer, cricket bat" aria-required="true" />
+                  </label>
+
+                  {suggestion && (
+                    <div className="row fu" style={{ marginTop: 12, padding: '12px 14px', borderRadius: 12, background: 'var(--surface2)', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: 15 }}>This sounds like <strong>{getItem(suggestion.category, suggestion.itemType).name}</strong> in {CATEGORIES[suggestion.category].name}. We have better cost data for it.</span>
+                      <button type="button" className="btn btn-ink btn-sm" onClick={() => up({ category: suggestion.category, itemType: suggestion.itemType, name: '', customCategory: undefined, customPrice: undefined, symptoms: suggestion.symptom ? { [suggestion.symptom]: 2 } : {} })}>
+                        Use {getItem(suggestion.category, suggestion.itemType).name}
+                      </button>
+                    </div>
+                  )}
+
+                  <label style={{ display: 'block', marginTop: 22 }}>
+                    <span className="field-label">Roughly what does a new one cost? <span className="field-hint">(helps us estimate repair costs)</span></span>
+                    <input className="input" type="number" inputMode="numeric" min={0} step={100} value={answers.customPrice ?? ''} onChange={(e) => up({ customPrice: e.target.value ? Number(e.target.value) : undefined })} placeholder={`Not sure? We'll assume about ${rupee(item.newPrice)}`} />
+                  </label>
+
+                  {answers.category === 'other' && (
+                    <div style={{ marginTop: 22 }}>
+                      <Seg label="Does it run on electricity or batteries?" value={answers.powered ? 'yes' : 'no'} options={[['yes', 'Yes'], ['no', 'No']]} onChange={(v) => up({ powered: v === 'yes' })} />
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -252,7 +293,7 @@ export default function Diagnose() {
                     {Object.entries(PRIORITY_LABELS).map(([k, l]) => <button key={k} type="button" className="chip" aria-pressed={answers.priority === k} onClick={() => up({ priority: k as Answers['priority'] })}>{l}</button>)}
                   </div>
                 </fieldset>
-                <Seg label={`Is there a ${cat.repairShop} near you?`} value={answers.repairAccess} options={[['yes', 'Yes'], ['no', 'No'], ['unsure', "Don't know"]]} onChange={(v) => up({ repairAccess: v })} />
+                <Seg label={`Is there a ${shopFor(answers)} near you?`} value={answers.repairAccess} options={[['yes', 'Yes'], ['no', 'No'], ['unsure', "Don't know"]]} onChange={(v) => up({ repairAccess: v })} />
               </div>
             </div>
           )}
@@ -279,16 +320,16 @@ export default function Diagnose() {
           <div className="between" style={{ marginTop: 30, paddingTop: 22, borderTop: '1px solid var(--border)', alignItems: 'center' }}>
             <button type="button" className="btn btn-line" disabled={step === 1} onClick={() => go(step - 1)}>Back</button>
             {step < 5
-              ? <button type="button" className="btn btn-ink sheen" disabled={!canNext} onClick={() => go(step + 1)}>{step === 1 && !hasCat ? 'Pick a category' : step === 3 && !canNext ? 'Pick at least one' : 'Next'}</button>
+              ? <button type="button" className="btn btn-ink sheen" disabled={!canNext} onClick={() => go(step + 1)}>{step === 1 && !hasCat ? 'Pick a category' : step === 1 && !nameOk ? 'Type the item name' : step === 3 && !canNext ? 'Pick at least one' : 'Next'}</button>
               : <button type="button" className="btn btn-tag btn-lg sheen" onClick={() => { setDraft(null); run(answers); }}>Run diagnosis</button>}
           </div>
         </div>
 
         <aside className="fi" aria-label="Your item so far" style={{ ...dl(0.6), flex: '1 1 360px', position: 'sticky', top: 96 }}>
           <Mat style={{ padding: '28px 20px 20px' }}>
-            <Sketch key={item.sketch + (hazard ? '-h' : '')} kind={hasCat ? (hazard && item.sketch === 'phone' ? 'phone' : item.sketch) : 'box'} hazard={hazard} label={`Line drawing of a ${item.name.toLowerCase()}`} />
+            <Sketch key={sketch + (hazard ? '-h' : '')} kind={hasCat ? sketch : 'box'} hazard={hazard} caption={hasCat && custom ? (answers.name.trim() || 'your item?') : undefined} label={`Line drawing of a ${item.name.toLowerCase()}`} />
             <div style={{ marginTop: 6, paddingTop: 14, borderTop: '1.5px dashed var(--chalkDim)' }}>
-              <div className="disp" style={{ fontSize: 22, fontWeight: 700 }}>{hasCat ? answers.name.trim() || item.name : 'Your item'}</div>
+              <div className="disp" style={{ fontSize: 22, fontWeight: 700 }}>{hasCat ? itemLabel(answers) : 'Your item'}</div>
               <div className="hand" style={{ fontSize: 23, lineHeight: 1.25, color: hazard ? 'var(--hazard)' : 'var(--marker)', minHeight: 58 }} aria-live="polite">
                 {notes.map((n) => <span key={n} className="fi" style={{ display: 'block' }}>{n}</span>)}
               </div>

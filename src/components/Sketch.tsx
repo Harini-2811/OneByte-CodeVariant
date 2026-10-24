@@ -10,9 +10,11 @@ interface Props {
   delay?: number;
   hazard?: boolean;
   label?: string;
+  /** Handwritten name beside the parcel sketch, for items the user typed in. */
+  caption?: string;
 }
 
-export function Sketch({ kind, delay = 0, hazard = false, label }: Props) {
+export function Sketch({ kind, delay = 0, hazard = false, label, caption }: Props) {
   const d = (x: number): CSSProperties => ({ animationDelay: `${(delay + x).toFixed(2)}s` });
   // Plain element factories (not components), so parent re-renders never remount and replay the drawing.
   const P = (path: string, at: number) => <path className="sk" pathLength={1} d={path} style={d(at)} />;
@@ -101,6 +103,14 @@ export function Sketch({ kind, delay = 0, hazard = false, label }: Props) {
   return (
     <svg viewBox="0 0 520 300" role="img" aria-label={label ?? `Line drawing of the item`} style={{ width: '100%', height: 'auto' }}>
       <g fill="none" stroke="var(--chalk)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">{drawings[kind]}</g>
+      {caption && kind === 'box' && (
+        <g className="skf" style={d(1.1)}>
+          <path d="M340 130 Q366 110 392 106" fill="none" stroke="var(--marker)" strokeWidth="2" strokeDasharray="5 5" strokeLinecap="round" />
+          <text x="396" y="104" fill="var(--marker)" style={{ fontFamily: 'var(--hand)', fontSize: 26, fontWeight: 600 }}>
+            {caption.length > 14 ? caption.slice(0, 13) + '\u2026' : caption}
+          </text>
+        </g>
+      )}
     </svg>
   );
 }

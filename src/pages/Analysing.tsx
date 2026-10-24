@@ -1,8 +1,9 @@
 import { useEffect, useMemo } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { getItem } from '../data/categories';
+import { itemFor } from '../data/categories';
 import { PATHS, PATH_ORDER } from '../data/paths';
 import { evaluate, itemLabel } from '../engine/engine';
+import { sketchFor } from '../engine/match';
 import { useSession } from '../state/session';
 import { Sketch } from '../components/Sketch';
 import { dl, Icon, ICONS, Lines, Mat } from '../components/ui';
@@ -24,7 +25,7 @@ export default function Analysing() {
   }, [item, nav, reduce]);
 
   if (!item || !res) return <Missing />;
-  const it = getItem(item.answers.category, item.answers.itemType);
+  const it = itemFor(item.answers);
   const name = itemLabel(item.answers);
 
   return (
@@ -32,7 +33,7 @@ export default function Analysing() {
       <div className="split" style={{ alignItems: 'center', maxWidth: 1080, margin: '0 auto' }}>
         <div className="fi" style={{ ...dl(0.3), flex: '1 1 440px' }}>
           <Mat style={{ padding: '28px 20px' }}>
-            <Sketch kind={it.sketch} delay={0.5} hazard={res.hazard} label={`Line drawing of a ${it.name.toLowerCase()}`} />
+            <Sketch kind={sketchFor(item.answers)} caption={it.id === 'other' ? name : undefined} delay={0.5} hazard={res.hazard} label={`Line drawing of a ${it.name.toLowerCase()}`} />
             <div className="scan" aria-hidden="true" />
           </Mat>
         </div>

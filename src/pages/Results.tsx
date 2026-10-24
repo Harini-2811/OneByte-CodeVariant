@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { LayoutGroup, motion, useReducedMotion } from 'framer-motion';
-import { DIY_LABELS, getItem, PRIORITY_LABELS } from '../data/categories';
+import { DIY_LABELS, itemFor, PRIORITY_LABELS } from '../data/categories';
 import { PATHS, PATH_ORDER } from '../data/paths';
 import type { Answers, PathId } from '../data/types';
 import { evaluate, itemLabel } from '../engine/engine';
@@ -24,7 +24,7 @@ export default function Results() {
 
   if (!item || !res) return <Missing />;
   const a = item.answers;
-  const it = getItem(a.category, a.itemType);
+  const it = itemFor(a);
   const name = itemLabel(a);
   const top = res.top;
   const second = res.ranking[1];

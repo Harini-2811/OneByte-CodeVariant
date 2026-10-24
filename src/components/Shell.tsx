@@ -98,12 +98,6 @@ export function Footer() {
   );
 }
 
-/** The measuring tape that pulls across the top on every page change. */
-export function Tape() {
-  const { pathname } = useLocation();
-  return <div key={pathname} className="tape" aria-hidden="true" />;
-}
-
 /** Scroll to top and move focus to the page on navigation, for keyboard and screen-reader users. */
 export function RouteFocus() {
   const { pathname } = useLocation();
