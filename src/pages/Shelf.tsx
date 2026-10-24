@@ -4,7 +4,7 @@ import { categoryName } from '../data/categories';
 import { PATHS } from '../data/paths';
 import { evaluate, itemLabel } from '../engine/engine';
 import { useSession } from '../state/session';
-import { Canvas, DragCard, DropZone, Grip, ToolTray } from '../components/Canvas';
+import { Canvas, DragCard, DropZone, Grip, ToolTray, ZoneDock } from '../components/Canvas';
 import { Counter, dl, Icon, ICONS, Lines } from '../components/ui';
 import { CAT_ICONS } from './shared';
 
@@ -107,7 +107,7 @@ export default function Shelf() {
           </div>
 
           {/* Action Zones */}
-          <div className="fu" style={{ ...dl(1), marginTop: 32, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
+          <ZoneDock className="fu" style={{ ...dl(1), marginTop: 32, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
             <DropZone id="compare" variant="list" label={`Compare tray (${picked.length} of 3)`} accepts={['item']} tone="var(--repair)" release="Release to add it to the comparison"
               hint={picked.length ? 'Drag a chip out of the tray to remove it from the comparison' : 'Drag up to 3 items here to compare them side by side'} icon={<Icon d={ICONS.compare} size={18} />}>
               {picked.length > 0 && (
@@ -124,7 +124,7 @@ export default function Shelf() {
             </DropZone>
             <DropZone id="scrap" label="Scrap bin" hint="Drop an item here to remove it from your shelf" release="Release to remove it" accepts={['item']}
               tone="var(--neg)" icon={<Icon d={ICONS.trash} size={20} />} />
-          </div>
+          </ZoneDock>
 
           {compare.length >= 2 && (
             <div className="card scroll-x fu" style={{ marginTop: 16, padding: '8px 18px' }}>

@@ -154,7 +154,7 @@ export default function Plan() {
                     hint={todoIdx.length ? 'Drag a step here to undo it' : 'Everything is done.'} icon={<Icon d={ICONS.reset} size={18} />}>
                     {todoIdx.map(stepCard)}
                   </DropZone>
-                  <DropZone id="done" variant="list" label="Done" accepts={['step']} tone={PATHS[p].color} release="Release to mark it done"
+                  <DropZone id="done" variant="list" className="done-zone" label="Done" accepts={['step']} tone={PATHS[p].color} release="Release to mark it done"
                     hint="Drop a step here when it's finished" icon={<Icon d={ICONS.check} size={18} width={2.6} />}>
                     {doneIdx.map(stepCard)}
                   </DropZone>

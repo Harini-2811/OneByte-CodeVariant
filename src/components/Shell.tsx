@@ -79,8 +79,8 @@ export function Header() {
         <nav className="nav" aria-label="Main">
           <NavLink to="/" end>Home</NavLink>
           <NavLink to="/diagnose?new=1" className={() => (inFlow ? 'active' : '')}>Diagnose</NavLink>
-          <NavLink to="/fixes">Common fixes</NavLink>
-          <NavLink to="/shelf">My shelf{items.length > 0 && <span className="badge" aria-label={`${items.length} items`}>{items.length}</span>}</NavLink>
+          <NavLink to="/fixes"><span className="nav-long">Common fixes</span><span className="nav-short">Fixes</span></NavLink>
+          <NavLink to="/shelf"><span className="nav-long">My shelf</span><span className="nav-short">Shelf</span>{items.length > 0 && <span className="badge" aria-label={`${items.length} items`}>{items.length}</span>}</NavLink>
         </nav>
         <ThemeSwitch />
       </div>

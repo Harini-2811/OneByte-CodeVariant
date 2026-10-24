@@ -94,3 +94,63 @@
 .navlink { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; }
 
 @media (prefers-reduced-motion: reduce) { .dcard.nudge { animation: none; } }
+
+/* ---------- phones and touch screens ---------- */
+.guide-touch { display: none; }
+@media (pointer: coarse), (max-width: 640px) {
+  .guide-mouse { display: none; }
+  .guide-touch { display: inline; }
+  .drag-guide { font-size: 14px; padding: 8px 0; line-height: 1.35; }
+  .drag-guide .wrap { flex-wrap: nowrap !important; justify-content: flex-start !important; gap: 10px !important; }
+  .drag-guide .grip { flex: none; }
+}
+@media (max-width: 860px) {
+  /* Home: bench sits right above the cards so the drag is a short thumb movement */
+  .split.hero { flex-direction: column; align-items: stretch !important; gap: 0; }
+  .split.hero .hero-left { display: contents; }
+  .split.hero .hero-copy { order: 1; }
+  .split.hero .hero-bench { order: 2; flex: none !important; width: 100%; margin-top: 28px; }
+  .split.hero .hero-actions { order: 3; }
+  .hero-arrow { rotate: -90deg; }
+}
+@media (max-width: 520px) {
+  .nav { justify-content: space-between; }
+  .nav a { padding: 6px 10px; font-size: 15px; }
+  .nav-long { display: none; }
+  /* the dashed zones and cards need big touch targets */
+  .dzone.compact { min-height: 64px; }
+  .tooltray { flex-direction: column; align-items: stretch; }
+  .tooltray .dzone.compact { flex: 1 1 auto; }
+  .tooltray-arrow { rotate: 90deg; align-self: center; }
+}
+
+/* ---------- phone dock: zones come to the thumb while dragging ---------- */
+@media (max-width: 640px) {
+  .zone-dock.docked {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; margin: 0 !important;
+    display: grid !important; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)) !important; gap: 8px !important;
+    padding: 10px 12px calc(12px + env(safe-area-inset-bottom)); max-height: 46vh; overflow: auto;
+    background: color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid var(--border); box-shadow: 0 -18px 40px -20px rgba(0,0,0,.35);
+    animation: dockin .28s var(--ease-out) both;
+  }
+  .zone-dock.docked .dzone { min-height: 84px; padding: 10px 8px; border-radius: 14px; gap: 4px; transform: none; }
+  .zone-dock.docked .dzone.is-over { transform: scale(1.03); }
+  .zone-dock.docked .dz-icon { width: 30px; height: 30px; border-radius: 9px; }
+  .zone-dock.docked .dz-label { font-size: 15px; }
+  .zone-dock.docked .dz-hint { display: none; }
+  .zone-dock.docked .dzone-list { align-items: center; justify-content: center; min-height: 84px; }
+  .zone-dock.docked .dzone-list .dz-body { display: none; }
+  .zone-dock.docked .dzone.compact { flex-direction: column; justify-content: center; text-align: center; }
+  .lib-bench { position: static !important; }
+  /* Plan: Done sits directly above To do, so the next step is always next to it */
+  .done-zone { order: -1; }
+}
+@keyframes dockin { from { opacity: 0; } }
+
+.nav-short { display: none; }
+@media (max-width: 520px) { .nav-short { display: inline; } }
+.drag-chip {
+  display: inline-flex; align-items: center; gap: 8px; max-width: 260px; padding: 12px 16px; border-radius: 14px;
+  background: var(--marker); color: #15201C; font-weight: 800; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}

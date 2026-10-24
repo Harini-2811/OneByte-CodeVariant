@@ -80,8 +80,8 @@ main { position: relative; z-index: 1; min-height: calc(100vh - 160px); }
 /* ---------------- reveal system ---------------- */
 .ln { display: block; overflow: hidden; padding-bottom: .1em; margin-bottom: -.1em; }
 .ln > span { display: inline-block; animation: up 1.2s var(--ease-out) both; }
-.fu { animation: fu 1.15s var(--ease-out) both; }
-.fi { animation: fi 1.3s ease both; }
+.fu { animation: fu 1.15s var(--ease-out) backwards; }
+.fi { animation: fi 1.3s ease backwards; }
 @keyframes up { from { transform: translateY(110%); filter: blur(4px); } }
 @keyframes fu { from { opacity: 0; transform: translateY(22px); filter: blur(6px); } }
 @keyframes fi { from { opacity: 0; filter: blur(6px); } }
@@ -173,7 +173,6 @@ input[type='range'] { width: 100%; accent-color: var(--text); height: 28px; curs
   .hdr-in { flex-wrap: wrap; row-gap: 8px; }
   .nav { order: 3; width: 100%; overflow-x: auto; margin: 0 -6px; }
   .brand { margin-right: auto; }
-    
 }
 
 /* ---------------- footer ---------------- */

@@ -69,6 +69,7 @@ How it works (`src/components/Canvas.tsx`, built on dnd-kit):
 - **Mouse, touch and keyboard.** Keyboard users focus a card, press Space or Enter to pick it up, use the arrow keys to jump between zones, and press Space or Enter to drop it (Escape cancels).
 - **Screen reader announcements** for pick-up, movement over zones, drop and cancel.
 - **Clear affordances:** grip dots on every card; zones pulse in their path colour while a matching card is being dragged, glow when it is over them, explain what releasing will do, and stamp when the card lands. Zones that don't accept the card fade out.
+- **Built for phones too:** press and hold to pick a card up. On small screens the page's zones slide into a dock at the bottom of the screen while you drag, tall cards travel as a small chip just above your finger so they never hide the target, and on Home the bench sits right above the cards.
 - **Safety still applies:** options blocked for safety can't be picked up.
 
 ## The decision engine

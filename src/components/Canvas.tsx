@@ -5,11 +5,11 @@
  * use the arrow keys to jump between drop zones, and press Space or Enter again to drop it
  * (Escape cancels). Every step is announced to screen readers.
  */
-import { createContext, useContext, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
 import {
-  DndContext, DragOverlay, KeyboardSensor, MouseSensor, TouchSensor, pointerWithin, rectIntersection,
+  DndContext, DragOverlay, MeasuringStrategy, KeyboardSensor, MouseSensor, TouchSensor, pointerWithin, rectIntersection,
   useDraggable, useDroppable, useSensor, useSensors,
-  type Announcements, type CollisionDetection, type DragEndEvent, type DragStartEvent, type KeyboardCoordinateGetter,
+  type Announcements, type CollisionDetection, type Modifier, type DragEndEvent, type DragStartEvent, type KeyboardCoordinateGetter,
 } from '@dnd-kit/core';
 import '../styles/canvas.css';
 
@@ -62,6 +62,21 @@ const jumpToZones: KeyboardCoordinateGetter = (event, { context }) => {
   return { x: r.left + r.width / 2 - collisionRect.width / 2, y: r.top + r.height / 2 - collisionRect.height / 2 };
 };
 
+/** Where the finger or pointer was when the drag started. */
+const pointOf = (e: Event | null) => {
+  if (!e) return null;
+  if ('touches' in e) { const t = (e as TouchEvent).touches[0] ?? (e as TouchEvent).changedTouches[0]; return t ? { x: t.clientX, y: t.clientY } : null; }
+  if ('clientX' in e) return { x: (e as MouseEvent).clientX, y: (e as MouseEvent).clientY };
+  return null;
+};
+
+/** On phones a tall card is carried as a small chip that floats just above the finger, so it never hides the zones. */
+const chipAboveFinger: Modifier = ({ transform, activatorEvent, activeNodeRect, overlayNodeRect }) => {
+  const p = pointOf(activatorEvent);
+  if (!p || !activeNodeRect || !overlayNodeRect) return transform;
+  return { ...transform, x: transform.x + (p.x - activeNodeRect.left) - overlayNodeRect.width / 2, y: transform.y + (p.y - activeNodeRect.top) - overlayNodeRect.height - 18 };
+};
+
 export function Canvas({ children, onDrop }: { children: ReactNode; onDrop: DropHandler }) {
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
@@ -73,7 +88,21 @@ export function Canvas({ children, onDrop }: { children: ReactNode; onDrop: Drop
   const [seen, setSeen] = useState<boolean>(hasDragged);
   const timer = useRef<number>();
 
-  const start = (e: DragStartEvent) => setActive((e.active.data.current as CardData) ?? null);
+  const [chip, setChip] = useState(false);
+  // On phones the zones come to the finger (dock, chip), so edge auto-scroll would only fight the drop.
+  const [phone, setPhone] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 640px)').matches);
+  useEffect(() => {
+    const m = window.matchMedia('(max-width: 640px)');
+    const on = () => setPhone(m.matches);
+    m.addEventListener('change', on);
+    return () => m.removeEventListener('change', on);
+  }, []);
+  const start = (e: DragStartEvent) => {
+    const el = (e.activatorEvent?.target as Element | null)?.closest?.('.dcard');
+    const h = el?.getBoundingClientRect().height ?? e.active.rect.current.initial?.height ?? 0;
+    setChip(!!pointOf(e.activatorEvent) && window.innerWidth <= 640 && h > 120);
+    setActive((e.active.data.current as CardData) ?? null);
+  };
   const end = (e: DragEndEvent) => {
     const card = e.active.data.current as CardData | undefined;
     setActive(null);
@@ -99,13 +128,15 @@ export function Canvas({ children, onDrop }: { children: ReactNode; onDrop: Drop
   };
 
   return (
-    <DndContext sensors={sensors} collisionDetection={collision} onDragStart={start} onDragEnd={end} onDragCancel={() => setActive(null)}
+    <DndContext autoScroll={phone ? false : undefined} measuring={{ droppable: { strategy: MeasuringStrategy.Always, frequency: 150 } }} sensors={sensors} collisionDetection={collision} onDragStart={start} onDragEnd={end} onDragCancel={() => setActive(null)}
       accessibility={{ announcements, screenReaderInstructions: { draggable: 'To pick up this card, press Space or Enter. Use the arrow keys to move between drop zones. Press Space or Enter again to drop it, or Escape to cancel.' } }}>
       <CanvasCtx.Provider value={{ active, flash, seen }}>
         {children}
       </CanvasCtx.Provider>
-      <DragOverlay dropAnimation={{ duration: 260, easing: 'cubic-bezier(.22,1,.36,1)' }}>
-        {active ? <div className="dcard is-lifted">{active.node as ReactNode}</div> : null}
+      <DragOverlay modifiers={chip ? [chipAboveFinger] : undefined} dropAnimation={chip ? null : { duration: 260, easing: 'cubic-bezier(.22,1,.36,1)' }}>
+        {active ? (chip
+          ? <div className="dcard is-lifted drag-chip"><Grip light />{String(active.label ?? 'Card')}</div>
+          : <div className="dcard is-lifted">{active.node as ReactNode}</div>) : null}
       </DragOverlay>
     </DndContext>
   );
@@ -209,6 +240,23 @@ export function DropZone({ id, label, hint, release, accepts, icon, tone = 'var(
   );
 }
 
+/**
+ * Holds a page's Action Zones. On phones, while a card is being dragged, the zones
+ * slide up into a dock fixed to the bottom of the screen so they are always a short
+ * thumb movement away. Their space in the page stays reserved, so nothing jumps.
+ */
+export function ZoneDock({ children, className = '', style }: { children: ReactNode; className?: string; style?: CSSProperties }) {
+  const { active } = useContext(CanvasCtx);
+  const inner = useRef<HTMLDivElement>(null);
+  const height = useRef(0);
+  useLayoutEffect(() => { if (!active && inner.current) height.current = inner.current.offsetHeight; });
+  return (
+    <div style={{ minHeight: active ? height.current : undefined }}>
+      <div ref={inner} className={`zone-dock ${active ? 'docked' : ''} ${className}`} style={style}>{children}</div>
+    </div>
+  );
+}
+
 export function useCanvas() {
   return useContext(CanvasCtx);
 }
@@ -258,8 +306,9 @@ export function DragGuide() {
     <div className="drag-guide" role="note">
       <div className="wrap row" style={{ gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
         <Grip />
-        <span><strong>This app works by drag and drop.</strong> Pick up any card with the dots and drop it into a dashed zone to make things happen.</span>
-        <span className="muted" style={{ fontSize: 13 }}>Keyboard: Space to pick up, arrow keys to move, Space to drop.</span>
+        <span className="guide-mouse"><strong>This app works by drag and drop.</strong> Pick up any card with the dots and drop it into a dashed zone to make things happen.</span>
+        <span className="guide-touch"><strong>Works by drag and drop.</strong> Press and hold a card with dots, then drag it into a dashed zone.</span>
+        <span className="muted guide-mouse" style={{ fontSize: 13 }}>Keyboard: Space to pick up, arrow keys to move, Space to drop.</span>
       </div>
     </div>
   );

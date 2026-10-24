@@ -10,7 +10,7 @@ import { encodeAnswers, useSession } from '../state/session';
 import { ScoringGuide } from '../components/ScoringGuide';
 import { Counter, dl, Dots, Icon, ICONS, Lines } from '../components/ui';
 import { Missing } from './shared';
-import { Canvas, DragCard, DropZone, Grip, ToolTray } from '../components/Canvas';
+import { Canvas, DragCard, DropZone, Grip, ToolTray, ZoneDock } from '../components/Canvas';
 
 export default function Results() {
   const { id } = useParams();
@@ -172,13 +172,13 @@ export default function Results() {
         </div>
 
         {/* Action Zones */}
-        <div className="noprint" style={{ marginTop: 26, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
+        <ZoneDock className="noprint" style={{ marginTop: 26, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
           <DropZone id="plan" label="Work order" hint="Drop a tag here to open its step-by-step plan" release="Release to open the plan" accepts={['path']}
             tone="var(--repair)" icon={<Icon d={ICONS.print} size={22} />} />
           <DropZone id="decide" label="My decision" release="Release to make this your decision" accepts={['path']}
             hint={item.chosen ? `You chose ${PATHS[item.chosen].name.toLowerCase()}. Drop another tag to change it.` : 'Drop a tag here to choose it and save it to your shelf'}
             icon={<Icon d={ICONS.check} size={22} width={2.6} />} />
-        </div>
+        </ZoneDock>
         </Canvas>
       ) : (
         <div className="card scroll-x fu" style={{ marginTop: 18, padding: '8px 18px' }}>

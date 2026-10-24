@@ -73,8 +73,9 @@ export default function Home() {
     <Canvas onDrop={onDrop}>
       {/* ---------- hero ---------- */}
       <section className="wrap" style={{ paddingTop: 80, paddingBottom: 72 }}>
-        <div className="split" style={{ alignItems: 'center' }}>
-          <div style={{ flex: '1 1 400px' }}>
+        <div className="split hero" style={{ alignItems: 'center' }}>
+          <div className="hero-left" style={{ flex: '1 1 400px' }}>
+            <div className="hero-copy">
             <h1 style={{ fontWeight: 800, letterSpacing: '-0.045em', lineHeight: 0.92 }}>
               <span className="ln" style={{ fontSize: 'clamp(34px, 4.4vw, 54px)', color: 'var(--muted)', fontWeight: 600, letterSpacing: '-0.03em' }}>
                 <span style={{ ...dl(0.5), position: 'relative' }}>Throw it out.<span className="strike" aria-hidden="true" /></span>
@@ -84,9 +85,11 @@ export default function Home() {
             <p className="fu lede" style={{ ...dl(0.95), marginTop: 26, maxWidth: 440 }}>
               A decision assistant for repair, reuse, repurpose, replace and recycle.
             </p>
+            </div>
+            <div className="hero-actions">
             <div className="fu" style={{ ...dl(1.1), marginTop: 30 }}>
-              <span className="drag-hint">Drag a blank ticket onto the bench to start <span className="arrow"><Icon d="M5 12h14 M13 6l6 6-6 6" size={16} /></span></span>
-              <div className="row" style={{ marginTop: 10, flexWrap: 'wrap', gap: 22 }}>
+              <span className="drag-hint">Drag a blank ticket onto the bench to start <span className="arrow hero-arrow"><Icon d="M5 12h14 M13 6l6 6-6 6" size={16} /></span></span>
+              <div className="row" style={{ marginTop: 10, flexWrap: 'wrap', gap: '46px 22px' }}>
                 <DragCard id="blank" nudge="Drag me onto the bench" data={{ kind: 'blank', label: 'Blank ticket: start a new diagnosis' }}>
                   <div className="tagcard tag-yellow" style={{ clipPath: 'none', borderRadius: 14, padding: '14px 18px', width: 250 }}>
                     <div className="between" style={{ alignItems: 'center', flexWrap: 'nowrap' }}>
@@ -99,7 +102,7 @@ export default function Home() {
               </div>
             </div>
             <div className="fu" style={{ ...dl(1.3), marginTop: 32 }}>
-              <span className="drag-hint">Or drag a sample onto the bench <span className="arrow"><Icon d="M5 12h14 M13 6l6 6-6 6" size={16} /></span></span>
+              <span className="drag-hint">Or drag a sample onto the bench <span className="arrow hero-arrow"><Icon d="M5 12h14 M13 6l6 6-6 6" size={16} /></span></span>
               <div className="chip-row" style={{ marginTop: 10 }}>
                 {PRESETS.map((p) => (
                   <DragCard key={p.id} id={`sample-${p.id}`} data={{ kind: 'sample', preset: p.id, label: `Sample: ${p.label}` }}>
@@ -110,9 +113,10 @@ export default function Home() {
                 ))}
               </div>
             </div>
+            </div>
           </div>
 
-          <div className="fi" style={{ ...dl(0.8), flex: '1.3 1 520px' }}>
+          <div className="fi hero-bench" style={{ ...dl(0.8), flex: '1.3 1 520px' }}>
             <DropZone id="bench" variant="bare" label="Drop it on the bench" release="Release to diagnose" hint="Drop a sample here to diagnose it" accepts={['sample', 'note', 'blank', 'category']}>
             <Mat>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'flex-start' }}>

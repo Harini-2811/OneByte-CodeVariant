@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Canvas, DragCard, DropZone, Grip } from '../components/Canvas';
+import { Canvas, DragCard, DropZone, Grip, ZoneDock } from '../components/Canvas';
 import { CATEGORIES, CATEGORY_ORDER } from '../data/categories';
 import { MATERIALS, PROBLEMS, REPURPOSE_IDEAS, TIPS, type Tip } from '../data/guides';
 import { PATHS } from '../data/paths';
@@ -86,9 +86,11 @@ export default function Library() {
             window.setTimeout(() => nav(`/diagnose?new=1&cat=${p.category}&item=${p.itemType}&sym=${p.symptom}${p.name ? '&name=' + encodeURIComponent(p.name) : ''}`), 380);
           }}>
             {problems.length > 0 && (
-              <div style={{ position: 'sticky', top: 84, zIndex: 3, marginBottom: 30 }}>
+              <div className="lib-bench" style={{ position: 'sticky', top: 84, zIndex: 3, marginBottom: 30 }}>
+                <ZoneDock>
                 <DropZone id="lib-bench" compact label="Workbench" hint="Drag a problem here to start a diagnosis with it filled in" release="Release to diagnose this"
                   accepts={['problem']} icon={<Icon d={PATHS.repair.icon} size={18} />} style={{ background: 'var(--surface)' }} />
+                </ZoneDock>
               </div>
             )}
             <div className="grid-auto" style={{ ['--min' as string]: '260px', gap: '34px 22px' }}>
