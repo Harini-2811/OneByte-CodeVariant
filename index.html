@@ -12,17 +12,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..800&family=Atkinson+Hyperlegible:wght@400;700&family=Caveat:wght@500;600&display=swap" rel="stylesheet" />
-    <script>
-      // Apply the saved or system theme before first paint, so there is never a flash of the wrong theme.
-      (function () {
-        try {
-          var t = localStorage.getItem('fif-theme');
-          if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-          document.documentElement.dataset.theme = t;
-        } catch (e) {
-          document.documentElement.dataset.theme = 'light';
-        }
-      })();
+       <script>
+      // Always open in the light theme; the toggle switches to dark.
+      document.documentElement.dataset.theme = 'light';
     </script>
   </head>
   <body>
