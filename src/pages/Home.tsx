@@ -53,7 +53,7 @@ export default function Home() {
       <section className="wrap" style={{ paddingTop: 72, paddingBottom: 64 }}>
         <div className="split" style={{ alignItems: 'flex-start' }}>
           <div style={{ flex: '1 1 400px', paddingTop: 20 }}>
-            <p className="ln muted"><span style={dl(0.5)}>A decision assistant for broken and worn-out things</span></p>
+            
             <h1 style={{ marginTop: 18, fontWeight: 800, letterSpacing: '-0.045em', lineHeight: 0.92 }}>
               <span className="ln" style={{ fontSize: 'clamp(34px, 4.4vw, 54px)', color: 'var(--muted)', fontWeight: 600, letterSpacing: '-0.03em' }}>
                 <span style={{ ...dl(0.65), position: 'relative' }}>Throw it out.<span className="strike" aria-hidden="true" /></span>
@@ -61,8 +61,7 @@ export default function Home() {
               <span className="ln" style={{ marginTop: 10, fontSize: 'clamp(64px, 8.6vw, 116px)' }}><span style={dl(0.8)}>Fix it first.</span></span>
             </h1>
             <p className="fu lede" style={{ ...dl(1.05), marginTop: 28, maxWidth: 480 }}>
-              Tell us what's wrong with your item. We weigh repair, reuse, repurpose, replace and recycle for your situation, then show you exactly why one comes out on top.
-            </p>
+              A decision assistant for repair, reuse, repurpose, replace and recycle.</p>
             <div className="fu row" style={{ ...dl(1.2), marginTop: 32, flexWrap: 'wrap', gap: 22 }}>
               <Link to="/diagnose?new=1" className="btn btn-ink btn-lg sheen">Start a diagnosis</Link>
               <Link to="/fixes" className="ulink">Browse common fixes</Link>
@@ -110,8 +109,8 @@ export default function Home() {
       {/* ---------- the method ---------- */}
       <section className="wrap" style={{ paddingBottom: 96 }}>
         <div className="fu between" style={{ ...dl(1.6), paddingBottom: 18, borderBottom: '2px solid var(--text)', alignItems: 'baseline' }}>
-          <h2 className="h-md">The name is the method.</h2>
-          <p className="muted" style={{ maxWidth: 540 }}>Every item starts at repair and only moves down the list when its condition, your budget or safety says so. The further down, the less of the original thing survives.</p>
+          
+        
         </div>
         <ol style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
           {PATH_ORDER.map((p, i) => (
@@ -138,7 +137,7 @@ export default function Home() {
         <div className="wrap">
           <div className="between" style={{ marginBottom: 44, alignItems: 'flex-end' }}>
             <h2 className="h-lg" style={{ maxWidth: 640 }}>A decision you can check, not just trust.</h2>
-            <p className="muted" style={{ maxWidth: 380 }}>No black box. Every point a path gains or loses comes from one of your answers, written in plain words.</p>
+           
           </div>
           <div className="grid-auto" style={{ ['--min' as string]: '300px', gap: 20 }}>
             <article className="card" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
@@ -200,7 +199,7 @@ export default function Home() {
         <div className="wrap split">
           <div style={{ flex: '1 1 340px' }}>
             <h2 className="h-lg">Other tools start after you've decided.</h2>
-            <p className="lede" style={{ marginTop: 22, maxWidth: 440 }}>Repair guides assume you'll repair. Recycling maps assume you'll recycle. Resale apps assume you'll replace. Fix It First is the step before all of them.</p>
+           
           </div>
           <div className="scroll-x" style={{ flex: '1.6 1 560px' }}>
             <table className="tbl" style={{ minWidth: 560 }}>

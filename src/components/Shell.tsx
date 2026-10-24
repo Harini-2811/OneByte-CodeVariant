@@ -76,12 +76,12 @@ export function Header() {
       <div className="wrap hdr-in">
         <Link to="/" className="brand" aria-label="Fix It First home"><Ring size={30} /><span>Fix It First</span></Link>
         <nav className="nav" aria-label="Main">
-          <NavLink to="/diagnose" className={() => (inFlow ? 'active' : '')}>Diagnose</NavLink>
+          <NavLink to="/" end>Home</NavLink>
+          <NavLink to="/diagnose?new=1" className={() => (inFlow ? 'active' : '')}>Diagnose</NavLink>
           <NavLink to="/fixes">Common fixes</NavLink>
           <NavLink to="/shelf">My shelf{items.length > 0 && <span className="badge" aria-label={`${items.length} items`}>{items.length}</span>}</NavLink>
         </nav>
         <ThemeSwitch />
-        <Link to="/diagnose?new=1" className="btn btn-tag sheen cta-top" style={{ minHeight: 44 }}>Start a diagnosis</Link>
       </div>
     </header>
   );
