@@ -37,6 +37,40 @@ The whole product is one metaphor: **a repair workbench**. Items are line-drawn 
 ### Safety first
 Hazards (swollen battery, exposed wire, burning smell, flaking non-stick coating) trigger an immediate warning, **block Reuse and Repurpose**, rule out DIY repair, and steer towards professional repair or safe recycling.
 
+## Surprise challenge: the Canvas Protocol
+
+There are no action buttons anywhere in the app. Every action is done by dragging a data card into an Action Zone, and each one fits the workbench theme:
+
+| Action | Card | Action Zone |
+|---|---|---|
+| Start a diagnosis | Blank ticket | The green bench on the home page |
+| Start with a category | Category card on the pegboard | Workbench tile |
+| Diagnose a sample item | Sample card | The green bench |
+| Start from a description | Your typed note card | Workbench |
+| Go to the next wizard step | "Step N answers" card | Next zone |
+| Run the diagnosis | Intake ticket | Workbench |
+| Diagnose a common problem | Problem card (Common fixes) | Workbench |
+| Open a plan | Any option tag from the rail | Work order |
+| Choose an option | Any option tag from the rail | My decision |
+| Undo What-if changes | "My original answers" chip | Restore |
+| Share or print a result | "This result" chip | Share link / Print |
+| Print a plan | "This plan" chip | Print |
+| Complete a plan step | Step card | Done (drag back to To do to undo) |
+| Save your decision | Decision ticket | My shelf (drag back to undo) |
+| Compare items | Shelf item | Compare tray (drag a chip out to remove it) |
+| Delete an item | Shelf item | Scrap bin |
+| Export the shelf | "My shelf" chip | Export JSON |
+
+Navigation is plain text links, and answer choices (chips, sliders, inputs), view toggles, tabs and the theme switch stay as direct controls, because they are answers and settings rather than actions.
+
+**Making it obvious:** a yellow guide bar under the header explains the drag-and-drop model until the first successful drop; the first card on a page wiggles and carries a "Drag me onto…" label; every card has grip dots; every zone says what releasing will do.
+
+How it works (`src/components/Canvas.tsx`, built on dnd-kit):
+- **Mouse, touch and keyboard.** Keyboard users focus a card, press Space or Enter to pick it up, use the arrow keys to jump between zones, and press Space or Enter to drop it (Escape cancels).
+- **Screen reader announcements** for pick-up, movement over zones, drop and cancel.
+- **Clear affordances:** grip dots on every card; zones pulse in their path colour while a matching card is being dragged, glow when it is over them, explain what releasing will do, and stamp when the card lands. Zones that don't accept the card fade out.
+- **Safety still applies:** options blocked for safety can't be picked up.
+
 ## The decision engine
 
 `src/engine/engine.ts` is a pure, unit-tested function: `evaluate(answers) → result`.
@@ -53,7 +87,7 @@ Costs are typical Indian ranges in rupees and CO₂e figures are rounded, indica
 - **Palette**: workshop grey, ink green, cutting-mat green, caution-tag yellow. Path colours appear only on data.
 - **Type**: Bricolage Grotesque (display), Atkinson Hyperlegible (body, chosen for readability), Caveat (technician notes only).
 - **Light and dark mode**: follows the system, remembers the choice, never flashes on load, and switches with a circular reveal. Dark mode is a "workshop at night" palette, not inverted colours.
-- **Motion**: a measuring tape pulls across the top on every page change; headings rise line by line with a focus pull; sketches draw themselves; tags drop and swing onto the rail and re-rank with spring physics; scores count up. A calm ambient background (drifting grid, slow light, a lamp that follows the pointer) runs behind everything.
+- **Motion**: headings rise line by line with a focus pull; sketches draw themselves; tags drop and swing onto the rail and re-rank with spring physics; scores count up. A calm ambient background (drifting grid, slow light, a lamp that follows the pointer) runs behind everything.
 - **Accessibility**: semantic HTML, skip link, visible focus, keyboard-operable everything, ARIA for toggles, progress and live regions, sufficient contrast in both themes, and **all motion disabled under `prefers-reduced-motion`**.
 - **Responsive**: from 360px phones to wide desktops; the rail becomes a vertical list on small screens.
 
@@ -66,7 +100,7 @@ src/
   data/         categories, items, symptoms, paths, guides, presets (all content is data)
   engine/       engine.ts (rules), format.ts, match.ts (plain-words matcher), engine.test.ts
   state/        session store (sessionStorage), share-link encoding
-  components/   shell (header, theme, background, tape), sketch, scoring guide, UI primitives
+  components/   shell (header, theme, background, drag guide), Canvas (drag and drop), sketch, scoring guide, UI primitives
   pages/        Home, Diagnose, Analysing, Results, Plan, Shelf, Library, Misc (shared link, 404)
   styles/       app.css (design tokens and system)
 ```

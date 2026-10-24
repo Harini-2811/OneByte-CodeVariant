@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useSession } from '../state/session';
 import { Icon, ICONS, Ring } from './ui';
+import { DragGuide } from './Canvas';
 
 /** Calm, always-on workshop atmosphere. The yellow lamp follows the pointer. */
 export function Background() {
@@ -83,6 +84,7 @@ export function Header() {
         </nav>
         <ThemeSwitch />
       </div>
+      <DragGuide />
     </header>
   );
 }

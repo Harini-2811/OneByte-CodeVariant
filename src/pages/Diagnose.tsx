@@ -10,6 +10,8 @@ import { useSession } from '../state/session';
 import { Sketch } from '../components/Sketch';
 import { dl, Icon, ICONS, Lines, Mat } from '../components/ui';
 import { CAT_ICONS } from './shared';
+import { Canvas, DragCard, DropZone, Grip } from '../components/Canvas';
+import { PATHS } from '../data/paths';
 
 const STEPS = ['What is it?', 'Age and condition', "What's wrong", 'What matters', 'Review'];
 
@@ -176,8 +178,8 @@ export default function Diagnose() {
                   {suggestion && (
                     <div className="row fu" style={{ marginTop: 12, padding: '12px 14px', borderRadius: 12, background: 'var(--surface2)', flexWrap: 'wrap', justifyContent: 'space-between' }}>
                       <span style={{ fontSize: 15 }}>This sounds like <strong>{getItem(suggestion.category, suggestion.itemType).name}</strong> in {CATEGORIES[suggestion.category].name}. We have better cost data for it.</span>
-                      <button type="button" className="btn btn-ink btn-sm" onClick={() => up({ category: suggestion.category, itemType: suggestion.itemType, name: '', customCategory: undefined, customPrice: undefined, symptoms: suggestion.symptom ? { [suggestion.symptom]: 2 } : {} })}>
-                        Use {getItem(suggestion.category, suggestion.itemType).name}
+                      <button type="button" className="ulink" onClick={() => up({ category: suggestion.category, itemType: suggestion.itemType, name: '', customCategory: undefined, customPrice: undefined, symptoms: suggestion.symptom ? { [suggestion.symptom]: 2 } : {} })}>
+                        Use {getItem(suggestion.category, suggestion.itemType).name.toLowerCase()} instead
                       </button>
                     </div>
                   )}
@@ -316,14 +318,59 @@ export default function Diagnose() {
                   </div>
                 ))}
               </dl>
+
+              {/* Canvas Protocol: drag the intake ticket onto the workbench to run the diagnosis */}
+              <Canvas onDrop={(card, zone) => { if (zone !== 'bench' || card.kind !== 'ticket') return false; setDraft(null); window.setTimeout(() => run(answers), 380); }}>
+                <div className="fu" style={{ ...dl(0.5), marginTop: 26, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 18, alignItems: 'stretch' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <span className="drag-hint">Drag your ticket onto the workbench <span className="arrow"><Icon d="M5 12h14 M13 6l6 6-6 6" size={16} /></span></span>
+                    <DragCard id="ticket" data={{ kind: 'ticket', label: `Intake ticket for ${itemLabel(answers)}` }}>
+                      <div className="tagcard tag-yellow" style={{ clipPath: 'none', borderRadius: 16, padding: '18px 18px 16px' }}>
+                        <div className="between" style={{ alignItems: 'center', flexWrap: 'nowrap' }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, opacity: 0.75 }}>Intake ticket</span>
+                          <Grip light />
+                        </div>
+                        <div className="disp" style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.1, marginTop: 4 }}>{itemLabel(answers)}</div>
+                        <div style={{ fontSize: 14, fontWeight: 700, marginTop: 6 }}>{categoryName(answers)}, {AGE_NOTES[answers.age]}</div>
+                        <div style={{ fontSize: 14, marginTop: 2 }}>{selected.length} {selected.length === 1 ? 'problem' : 'problems'}{hazard ? ', safety issue' : ''}</div>
+                      </div>
+                    </DragCard>
+                  </div>
+                  <DropZone id="bench" label="Workbench" hint="Drop the ticket here to run the diagnosis" release="Release to diagnose" accepts={['ticket']}
+                    icon={<Icon d={PATHS.repair.icon} size={22} />} />
+                </div>
+              </Canvas>
             </div>
           )}
 
-          <div className="between" style={{ marginTop: 30, paddingTop: 22, borderTop: '1px solid var(--border)', alignItems: 'center' }}>
-            <button type="button" className="btn btn-line" disabled={step === 1} onClick={() => go(step - 1)}>Back</button>
-            {step < 5
-              ? <button type="button" className="btn btn-ink sheen" disabled={!canNext} onClick={() => go(step + 1)}>{step === 1 && !hasCat ? 'Pick a category' : step === 1 && !nameOk ? 'Type the item name' : step === 3 && !canNext ? 'Pick at least one' : 'Next'}</button>
-              : <button type="button" className="btn btn-tag btn-lg sheen" onClick={() => { setDraft(null); run(answers); }}>Run diagnosis</button>}
+          {/* Canvas Protocol: answers are dragged onto Next to move to the next step */}
+          <div style={{ marginTop: 30, paddingTop: 22, borderTop: '1px solid var(--border)' }}>
+            {step < 5 ? (
+              <Canvas onDrop={(card, zone) => { if (card.kind !== 'answers' || zone !== 'next' || !canNext) return false; window.setTimeout(() => go(step + 1), 280); }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14, alignItems: 'center' }}>
+                  <DragCard id={`answers-${step}`} disabled={!canNext} nudge={step === 1 ? 'Drag me onto Next' : undefined}
+                    data={{ kind: 'answers', label: `Your answers for step ${step}, ${STEPS[step - 1]}` }}>
+                    <div className="card row" style={{ padding: '12px 14px', borderRadius: 14, gap: 12, borderColor: canNext ? 'var(--text)' : 'var(--border)', opacity: canNext ? 1 : 0.6 }}>
+                      <span style={{ width: 30, height: 30, flex: 'none', borderRadius: 8, display: 'grid', placeItems: 'center', background: canNext ? 'var(--marker)' : 'var(--surface2)', color: '#15201C', fontWeight: 800 }}>{step}</span>
+                      <span style={{ flex: 1, minWidth: 0 }}>
+                        <span style={{ display: 'block', fontWeight: 700 }}>Step {step} answers</span>
+                        <span className="muted" style={{ display: 'block', fontSize: 13 }}>
+                          {step === 1 && !hasCat ? 'Pick a category first' : step === 1 && !nameOk ? 'Type the item name first' : step === 3 && !canNext ? 'Pick at least one problem first' : 'Ready. Drag onto Next'}
+                        </span>
+                      </span>
+                      <Grip />
+                    </div>
+                  </DragCard>
+                  <DropZone id="next" compact label={`Next: ${STEPS[step]}`} hint="Drop your answers here to continue" release="Release to continue"
+                    accepts={['answers']} icon={<Icon d="M5 12h14 M13 6l6 6-6 6" size={18} />} />
+                </div>
+              </Canvas>
+            ) : (
+              <span className="muted" style={{ fontSize: 14 }}>Drop the ticket on the workbench to diagnose</span>
+            )}
+            {step > 1 && (
+              <button type="button" className="ulink muted" style={{ marginTop: 16 }} onClick={() => go(step - 1)}>Back to {STEPS[step - 2].toLowerCase()}</button>
+            )}
           </div>
         </div>
 

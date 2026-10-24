@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { Canvas, DragCard, DropZone, Grip } from '../components/Canvas';
 import { CATEGORIES, CATEGORY_ORDER } from '../data/categories';
 import { MATERIALS, PROBLEMS, REPURPOSE_IDEAS, TIPS, type Tip } from '../data/guides';
 import { PATHS } from '../data/paths';
@@ -20,6 +21,7 @@ const TABS: [Tab, string][] = [
 const GENERAL_ICON = 'M12 2a10 10 0 1 0 0 20a10 10 0 1 0 0-20 M2 12h20 M12 2a15 15 0 0 1 0 20 M12 2a15 15 0 0 0 0 20';
 
 export default function Library() {
+  const nav = useNavigate();
   const [tab, setTab] = useState<Tab>('problems');
   const [cat, setCat] = useState<CategoryId | 'all'>('all');
   const [q, setQ] = useState('');
@@ -39,7 +41,7 @@ export default function Library() {
   return (
     <section className="wrap" style={{ paddingTop: 48, paddingBottom: 96 }}>
       <h1 className="h-xl"><Lines lines={['Common fixes']} /></h1>
-      <p className="fu lede muted" style={{ ...dl(0.7), marginTop: 12 }}>Quick fixes and ideas for every path</p>
+      <p className="fu lede muted" style={{ ...dl(0.7), marginTop: 12 }}>Quick fixes and ideas for every path.</p>
 
       <div className="fu between" style={{ ...dl(0.85), marginTop: 30, alignItems: 'center' }}>
         <div className="row" role="tablist" aria-label="Library sections" style={{ gap: 6, flexWrap: 'wrap' }}>
@@ -78,20 +80,34 @@ export default function Library() {
         )}
 
         {tab === 'problems' && (
-          <div className="grid-auto" style={{ ['--min' as string]: '260px', gap: '34px 22px' }}>
-            {problems.map((p, i) => (
-              <Link key={p.id} to={`/diagnose?new=1&cat=${p.category}&item=${p.itemType}&sym=${p.symptom}${p.name ? '&name=' + encodeURIComponent(p.name) : ''}`} className="card hang fu" style={{ ...dl(0.2 + Math.min(i, 10) * 0.05), position: 'relative', padding: '26px 20px 18px', borderRadius: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <span className="peg" aria-hidden="true" />
-                <span className="row muted" style={{ gap: 8, fontSize: 14 }}><Icon d={CAT_ICONS[p.category]} size={18} width={1.8} />{CATEGORIES[p.category].name}</span>
-                <span className="disp" style={{ fontSize: 21, fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.15 }}>{p.title}</span>
-                <span className="muted" style={{ fontSize: 15 }}>{p.note}</span>
-                <span className="between" style={{ marginTop: 8, alignItems: 'center' }}>
-                  <span className="row" style={{ gap: 8, fontSize: 14, fontWeight: 700 }}><span style={{ width: 10, height: 10, borderRadius: 3, background: PATHS[p.path].color }} />{p.verdict}</span>
-                  <span className="ulink" style={{ fontSize: 14 }}>Diagnose this</span>
-                </span>
-              </Link>
-            ))}
-          </div>
+          <Canvas onDrop={(card, zone) => {
+            const p = PROBLEMS.find((x) => x.id === card.problem);
+            if (card.kind !== 'problem' || zone !== 'lib-bench' || !p) return false;
+            window.setTimeout(() => nav(`/diagnose?new=1&cat=${p.category}&item=${p.itemType}&sym=${p.symptom}${p.name ? '&name=' + encodeURIComponent(p.name) : ''}`), 380);
+          }}>
+            {problems.length > 0 && (
+              <div style={{ position: 'sticky', top: 84, zIndex: 3, marginBottom: 30 }}>
+                <DropZone id="lib-bench" compact label="Workbench" hint="Drag a problem here to start a diagnosis with it filled in" release="Release to diagnose this"
+                  accepts={['problem']} icon={<Icon d={PATHS.repair.icon} size={18} />} style={{ background: 'var(--surface)' }} />
+              </div>
+            )}
+            <div className="grid-auto" style={{ ['--min' as string]: '260px', gap: '34px 22px' }}>
+              {problems.map((p, i) => (
+                <DragCard key={p.id} id={`problem-${p.id}`} nudge={i === 0 ? 'Drag me onto the workbench' : undefined} data={{ kind: 'problem', problem: p.id, label: p.title }}>
+                  <div className="card fu" style={{ ...dl(0.2 + Math.min(i, 10) * 0.05), position: 'relative', padding: '26px 20px 18px', borderRadius: 12, display: 'flex', flexDirection: 'column', gap: 6, height: '100%' }}>
+                    <span className="peg" aria-hidden="true" />
+                    <span className="between" style={{ alignItems: 'center', flexWrap: 'nowrap' }}>
+                      <span className="row muted" style={{ gap: 8, fontSize: 14 }}><Icon d={CAT_ICONS[p.category]} size={18} width={1.8} />{CATEGORIES[p.category].name}</span>
+                      <Grip />
+                    </span>
+                    <span className="disp" style={{ fontSize: 21, fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.15 }}>{p.title}</span>
+                    <span className="muted" style={{ fontSize: 15 }}>{p.note}</span>
+                    <span className="row" style={{ marginTop: 8, gap: 8, fontSize: 14, fontWeight: 700 }}><span style={{ width: 10, height: 10, borderRadius: 3, background: PATHS[p.path].color }} />{p.verdict}</span>
+                  </div>
+                </DragCard>
+              ))}
+            </div>
+          </Canvas>
         )}
 
         {(tab === 'repair' || tab === 'reuse' || tab === 'replace') && (

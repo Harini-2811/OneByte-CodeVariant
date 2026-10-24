@@ -1,0 +1,96 @@
+/* =========================================================================
+   Canvas Protocol: draggable data cards and Action Zones
+   ========================================================================= */
+
+.dcard {
+  position: relative; cursor: grab; user-select: none; -webkit-user-select: none; touch-action: manipulation;
+  transition: translate .3s var(--ease), box-shadow .3s ease, opacity .25s ease, filter .25s ease;
+}
+.dcard:hover:not(.is-disabled):not(.is-ghost) { translate: 0 -3px; box-shadow: var(--shadow); }
+.dcard:focus-visible { outline: 3px solid var(--marker); outline-offset: 4px; border-radius: 14px; }
+.dcard.is-ghost { opacity: .32; filter: grayscale(.4); }
+.dcard.is-disabled { cursor: not-allowed; }
+.dcard.is-lifted { cursor: grabbing; rotate: -2.5deg; scale: 1.04; box-shadow: 0 34px 60px -22px rgba(0,0,0,.55); border-radius: 14px; }
+.grip { display: inline-flex; color: var(--muted); opacity: .8; }
+
+/* hint shown above groups of draggable cards */
+.drag-hint { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); }
+.drag-hint .arrow { animation: nudge 1.8s ease-in-out infinite; display: inline-flex; }
+@keyframes nudge { 50% { transform: translateX(6px); } }
+
+/* ---------- tray zones ---------- */
+.dzone {
+  --tone: var(--marker);
+  position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; text-align: center;
+  min-height: 132px; padding: 22px 20px; border-radius: 20px; border: 2px dashed var(--border); color: var(--muted);
+  background: color-mix(in srgb, var(--surface) 65%, transparent);
+  transition: border-color .25s ease, background-color .25s ease, transform .3s var(--ease), box-shadow .3s ease, opacity .25s ease, color .25s ease;
+}
+.dz-icon { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 14px; background: color-mix(in srgb, var(--tone) 22%, transparent); color: var(--text); }
+.dz-icon.sm { width: 34px; height: 34px; border-radius: 10px; }
+.dz-label { font-family: var(--display); font-weight: 800; font-size: 20px; letter-spacing: -0.02em; color: var(--text); }
+.dz-hint { font-size: 14px; line-height: 1.4; max-width: 280px; }
+
+.dzone.is-ready { border-color: var(--tone); color: var(--text); animation: dzpulse 1.6s ease-in-out infinite; }
+.dzone.is-over { border-style: solid; background: color-mix(in srgb, var(--tone) 20%, var(--surface)); transform: scale(1.025); animation: none; box-shadow: 0 0 0 7px color-mix(in srgb, var(--tone) 28%, transparent); }
+.dzone.is-muted { opacity: .45; }
+.dzone.is-done { animation: dzdone .9s ease both; }
+@keyframes dzpulse { 50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--tone) 18%, transparent); } }
+@keyframes dzdone { 0% { background: color-mix(in srgb, var(--tone) 45%, var(--surface)); transform: scale(1.04); } 100% { transform: scale(1); } }
+
+/* list zones: columns that hold cards (to do / done, shelf trays) */
+.dzone-list { align-items: stretch; justify-content: flex-start; text-align: left; gap: 12px; padding: 18px; min-height: 180px; }
+.dzone-list .dz-head { display: flex; align-items: center; gap: 10px; }
+.dzone-list .dz-body { display: flex; flex-direction: column; gap: 10px; flex: 1; }
+.dzone-list .dz-hint { max-width: none; text-align: center; padding-top: 4px; }
+
+/* zones sitting on the green cutting mat */
+.mat .dzone { border-color: var(--chalkDim); color: var(--chalk); background: rgba(0,0,0,.14); }
+.mat .dzone .dz-label { color: var(--chalk); }
+.mat .dzone .dz-icon { color: var(--chalk); background: rgba(255,255,255,.1); }
+.mat .dzone.is-ready { border-color: var(--marker); }
+.mat .dzone.is-over { background: rgba(242,194,48,.18); }
+
+/* ---------- bare zones: any surface becomes a drop target ---------- */
+.dzone-bare { --tone: var(--marker); position: relative; border-radius: 22px; transition: transform .3s var(--ease), box-shadow .3s ease; }
+.dzone-bare .dz-veil {
+  position: absolute; inset: 10px; border-radius: 16px; border: 3px dashed var(--tone); display: grid; place-items: center;
+  background: rgba(13,23,21,.35); opacity: 0; pointer-events: none; transition: opacity .25s ease, background-color .25s ease;
+}
+.dzone-bare .dz-veil .dz-label { padding: 10px 18px; border-radius: 12px; background: var(--tone); color: #15201C; font-size: 22px; }
+.dzone-bare.is-ready .dz-veil { opacity: 1; animation: dzpulse 1.6s ease-in-out infinite; }
+.dzone-bare.is-over { transform: scale(1.015); }
+.dzone-bare.is-over .dz-veil { background: rgba(242,194,48,.22); animation: none; }
+.dzone-bare.is-done { animation: dzdone .9s ease both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .dzone.is-ready, .dzone-bare.is-ready .dz-veil, .drag-hint .arrow { animation: none; }
+  .dcard.is-lifted { rotate: 0deg; }
+}
+
+/* ---------- first-run guidance ---------- */
+.dcard.nudge { animation: wiggle 3.2s ease-in-out 1.6s infinite; }
+.dcard.nudge::after {
+  content: '↑ ' attr(data-nudge); position: absolute; left: 50%; top: calc(100% + 8px); transform: translateX(-50%);
+  white-space: nowrap; padding: 5px 10px; border-radius: 8px; background: var(--ink); color: var(--inkText);
+  font-size: 13px; font-weight: 700; pointer-events: none; z-index: 5; animation: fu .6s var(--ease-out) 1.2s both;
+}
+@keyframes wiggle { 0%, 82%, 100% { rotate: 0deg; } 86% { rotate: -2.5deg; } 90% { rotate: 2.5deg; } 94% { rotate: -1.5deg; } 97% { rotate: 1deg; } }
+.drag-guide { position: relative; z-index: 35; background: var(--marker); color: #15201C; font-size: 15px; padding: 9px 0; }
+.drag-guide .grip, .drag-guide .muted { color: rgba(21,32,28,.7); }
+
+/* ---------- compact zones and tool trays ---------- */
+.dzone.compact { flex-direction: row; justify-content: flex-start; text-align: left; min-height: 60px; padding: 10px 14px; gap: 10px; border-radius: 14px; }
+.dzone.compact .dz-icon { width: 34px; height: 34px; border-radius: 10px; flex: none; }
+.dzone.compact .dz-text { display: flex; flex-direction: column; min-width: 0; }
+.dzone.compact .dz-label { font-size: 16px; }
+.dzone.compact .dz-hint { font-size: 12.5px; max-width: none; }
+.tooltray { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.tooltray .dzone.compact { flex: 1 1 170px; }
+.tooltray-arrow { color: var(--muted); display: inline-flex; }
+.doc-chip { min-height: 44px; gap: 8px; font-size: 14px; background: var(--surface); }
+
+/* text links that replace navigation buttons */
+.navlink { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; }
+
+@media (prefers-reduced-motion: reduce) { .dcard.nudge { animation: none; } }

@@ -10,10 +10,11 @@ import { encodeAnswers, useSession } from '../state/session';
 import { ScoringGuide } from '../components/ScoringGuide';
 import { Counter, dl, Dots, Icon, ICONS, Lines } from '../components/ui';
 import { Missing } from './shared';
+import { Canvas, DragCard, DropZone, Grip, ToolTray } from '../components/Canvas';
 
 export default function Results() {
   const { id } = useParams();
-  const { get, setAnswers, resetAnswers, setDraft, toast } = useSession();
+  const { get, setAnswers, resetAnswers, setDraft, decide, toast } = useSession();
   const nav = useNavigate();
   const item = get(id);
   const [whyPath, setWhyPath] = useState<PathId | null>(null);
@@ -41,6 +42,14 @@ export default function Results() {
       else { await navigator.clipboard.writeText(url); toast('Link copied. Anyone can open this result.'); }
     } catch { /* share sheet dismissed */ }
   };
+  // Canvas Protocol: a tag dropped on "Work order" opens its plan; on "My decision" it becomes the user's choice.
+  const onDrop = (card: { kind: string; path?: unknown }, zone: string | null) => {
+    const p = card.path as PathId | undefined;
+    if (card.kind !== 'path' || !p || !zone || res.blocked[p]) return false;
+    if (zone === 'plan') { window.setTimeout(() => nav(`/item/${item.id}/plan/${p}`), 380); return true; }
+    if (zone === 'decide') { decide(item.id, p); toast(`Decided: ${PATHS[p].name.toLowerCase()} your ${name.toLowerCase()}. It's on your shelf.`); return true; }
+    return false;
+  };
   const edit = () => { setDraft({ answers: structuredClone(a), step: 5, touched: true }); nav('/diagnose'); };
 
   return (
@@ -63,11 +72,7 @@ export default function Results() {
           <div className="muted" style={{ fontSize: 15 }}>
             {PATHS[top].name} leads {PATHS[second].name.toLowerCase()} by {res.gap} {res.gap === 1 ? 'point' : 'points'}.{res.hazard ? ' Two options are blocked for safety.' : ''}
           </div>
-          <div className="row noprint" style={{ justifyContent: 'flex-end', marginTop: 12, gap: 8, flexWrap: 'wrap' }}>
-            <button type="button" className="btn btn-line btn-sm" onClick={share}><Icon d={ICONS.share} size={16} />Share</button>
-            <button type="button" className="btn btn-line btn-sm" onClick={() => window.print()}><Icon d={ICONS.print} size={16} />Print</button>
-            <button type="button" className="btn btn-line btn-sm" onClick={() => guide.current?.showModal()}><Icon d={ICONS.info} size={16} />How we score</button>
-          </div>
+          <button type="button" className="ulink noprint" style={{ marginTop: 10, fontSize: 15 }} onClick={() => guide.current?.showModal()}>How we score</button>
         </div>
       </div>
 
@@ -88,6 +93,13 @@ export default function Results() {
         ))}
       </div>
 
+      <div className="fu noprint" style={{ ...dl(1), marginTop: 18 }}>
+        <ToolTray card="This result" cardIcon={<Icon d={ICONS.info} size={16} />} tools={[
+          { id: 'share', label: 'Share', hint: 'Drop to copy a link', release: 'Release to share', icon: <Icon d={ICONS.share} size={18} />, run: share },
+          { id: 'print', label: 'Print', hint: 'Drop to print this result', release: 'Release to print', icon: <Icon d={ICONS.print} size={18} />, run: () => window.print() },
+        ]} />
+      </div>
+
       {/* ---------- view toggle ---------- */}
       <div className="between noprint" style={{ marginTop: 34, alignItems: 'center' }}>
         <h2 className="h-sm fu" style={dl(1)}>All five options, ranked</h2>
@@ -100,6 +112,10 @@ export default function Results() {
 
       {/* ---------- the rail ---------- */}
       {view === 'rail' ? (
+        <Canvas onDrop={onDrop}>
+        <p className="drag-hint fu noprint" style={{ ...dl(1), marginTop: 10 }}>
+          <Grip /> Drag a tag into <strong style={{ color: 'var(--text)' }}>Work order</strong> to see its plan, or into <strong style={{ color: 'var(--text)' }}>My decision</strong> to choose it.
+        </p>
         <div className="rail fi" style={{ ...dl(0.9), marginTop: 18 }}>
           <div className="rail-rod" aria-hidden="true" />
           <LayoutGroup>
@@ -114,15 +130,16 @@ export default function Results() {
                   <motion.li key={p} layout={!reduce} transition={{ type: 'spring', stiffness: 170, damping: 22 }} className="rail-item">
                     <div className="drop" style={{ width: '100%', animationDelay: `${0.9 + PATH_ORDER.indexOf(p) * 0.12}s` }}>
                       <div className="swingwrap">
-                        <div className="string" style={{ height: 30 + pos * 10, transition: 'height .9s var(--ease)' }} />
+                        <div className="string" style={{ height: 30 }} />
+                        <DragCard id={`path-${p}`} disabled={!!bl} data={{ kind: 'path', path: p, label: `${PATHS[p].name}, ${bl ? 'blocked' : res.scores[p] + ' out of 100'}` }}>
                         <article className={'tagcard' + (isTop ? ' tag-yellow' : '')} aria-label={`${PATHS[p].name}: ${bl ? 'blocked' : res.scores[p] + ' out of 100'}`}
                           style={{ background: isTop ? undefined : 'var(--surface)', color: ink, borderTop: `6px solid ${PATHS[p].color}`, padding: '30px 16px 16px' }}>
                           <span className="hole" />
                           {bl && <div className="hatch" aria-hidden="true" style={{ position: 'absolute', inset: 0, opacity: 0.55 }} />}
                           <div style={{ position: 'relative' }}>
                             <div className="between" style={{ fontSize: 13, fontWeight: 700, flexWrap: 'nowrap' }}>
-                              <span style={{ opacity: 0.75, color: bl ? 'var(--neg)' : undefined }}>{bl ? 'Blocked for safety' : isTop ? 'Best fit' : `Option ${pos + 1}`}</span>
-                              <Icon d={PATHS[p].icon} size={18} stroke={isTop ? '#15201C' : PATHS[p].color} />
+                              <span style={{ opacity: 0.75, color: bl ? 'var(--neg)' : undefined }}>{bl ? 'Blocked for safety' : item.chosen === p ? 'Your decision' : isTop ? 'Best fit' : `Option ${pos + 1}`}</span>
+                              <span className="row" style={{ gap: 6 }}><Icon d={PATHS[p].icon} size={18} stroke={isTop ? '#15201C' : PATHS[p].color} />{!bl && <Grip light={isTop} />}</span>
                             </div>
                             <h3 className="disp" style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.1, marginTop: 4 }}>{PATHS[p].name}</h3>
                             <div className="row" style={{ alignItems: 'baseline', gap: 4, marginTop: 6 }}>
@@ -135,18 +152,16 @@ export default function Results() {
                               <dl style={{ margin: '14px 0 0', fontSize: 13, display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '5px 10px', alignItems: 'center' }}>
                                 <dt style={{ opacity: 0.75 }}>Cost</dt><dd style={{ margin: 0, fontWeight: 700, textAlign: 'right' }}>{tr.cost}</dd>
                                 <dt style={{ opacity: 0.75 }}>Time</dt><dd style={{ margin: 0, fontWeight: 700, textAlign: 'right' }}>{tr.time}</dd>
-                                <dt style={{ opacity: 0.75 }}>Difficulty</dt><dd style={{ margin: 0 }}><Dots n={tr.difficulty} color={ink} dim={dim} label={`Difficulty ${tr.difficulty} of 5`} /></dd>
-                                <dt style={{ opacity: 0.75 }}>Effort</dt><dd style={{ margin: 0 }}><Dots n={tr.effort} color={ink} dim={dim} label={`Effort ${tr.effort} of 5`} /></dd>
                                 <dt style={{ opacity: 0.75 }}>Planet</dt><dd style={{ margin: 0 }}><Dots n={tr.eco} color={isTop ? '#1E7A45' : 'var(--pos)'} dim={dim} leaf label={`Planet friendliness ${tr.eco} of 5`} /></dd>
                               </dl>
                             )}
                             <div className="row noprint" style={{ marginTop: 14, gap: 6 }}>
-                              <button type="button" className="btn btn-sm" aria-pressed={why === p} onClick={() => setWhyPath(p)}
-                                style={{ flex: 1, background: why === p ? (isTop ? '#15201C' : 'var(--ink)') : 'transparent', color: why === p ? (isTop ? '#F2C230' : 'var(--inkText)') : 'inherit', borderColor: 'currentColor' }}>Why?</button>
-                              {!bl && <Link to={`/item/${item.id}/plan/${p}`} className="btn btn-sm sheen" style={{ flex: 1.2, background: isTop ? '#15201C' : 'var(--ink)', color: isTop ? '#F2C230' : 'var(--inkText)' }}>Choose</Link>}
+                              <button type="button" className="ulink" aria-pressed={why === p} onClick={() => setWhyPath(p)}
+                                style={{ fontSize: 14, color: 'inherit', fontWeight: why === p ? 800 : 700 }}>{why === p ? 'Showing why ↓' : 'Why this score?'}</button>
                             </div>
                           </div>
                         </article>
+                        </DragCard>
                       </div>
                     </div>
                   </motion.li>
@@ -155,11 +170,21 @@ export default function Results() {
             </ol>
           </LayoutGroup>
         </div>
+
+        {/* Action Zones */}
+        <div className="noprint" style={{ marginTop: 26, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
+          <DropZone id="plan" label="Work order" hint="Drop a tag here to open its step-by-step plan" release="Release to open the plan" accepts={['path']}
+            tone="var(--repair)" icon={<Icon d={ICONS.print} size={22} />} />
+          <DropZone id="decide" label="My decision" release="Release to make this your decision" accepts={['path']}
+            hint={item.chosen ? `You chose ${PATHS[item.chosen].name.toLowerCase()}. Drop another tag to change it.` : 'Drop a tag here to choose it and save it to your shelf'}
+            icon={<Icon d={ICONS.check} size={22} width={2.6} />} />
+        </div>
+        </Canvas>
       ) : (
         <div className="card scroll-x fu" style={{ marginTop: 18, padding: '8px 18px' }}>
           <table className="tbl" style={{ minWidth: 720 }}>
             <caption className="sr">All five options compared</caption>
-            <thead><tr><th scope="col">Option</th><th scope="col">Score</th><th scope="col">Cost</th><th scope="col">Time</th><th scope="col">Difficulty</th><th scope="col">Effort</th><th scope="col">Planet</th><th scope="col"><span className="sr">Actions</span></th></tr></thead>
+            <thead><tr><th scope="col">Option</th><th scope="col">Score</th><th scope="col">Cost</th><th scope="col">Time</th><th scope="col">Difficulty</th><th scope="col">Effort</th><th scope="col">Planet</th></tr></thead>
             <tbody>
               {res.ranking.map((p) => {
                 const tr = res.tradeoffs[p];
@@ -172,12 +197,12 @@ export default function Results() {
                     <td><Dots n={tr.difficulty} color="var(--text)" label={`Difficulty ${tr.difficulty} of 5`} /></td>
                     <td><Dots n={tr.effort} color="var(--text)" label={`Effort ${tr.effort} of 5`} /></td>
                     <td><Dots n={tr.eco} color="var(--pos)" leaf label={`Planet friendliness ${tr.eco} of 5`} /></td>
-                    <td style={{ textAlign: 'right' }}>{!bl && <Link className="ulink" to={`/item/${item.id}/plan/${p}`}>Choose</Link>}</td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
+          <p className="muted" style={{ fontSize: 14, padding: '10px 0 6px' }}>To choose an option, switch to Tags and drag it into an action zone.</p>
         </div>
       )}
 
@@ -206,7 +231,6 @@ export default function Results() {
         <div className="fu noprint mat" style={{ ...dl(1.4), flex: '1 1 360px', borderRadius: 22, padding: '26px 28px', color: 'var(--chalk)', boxShadow: 'var(--shadow)' }}>
           <div className="between" style={{ alignItems: 'baseline' }}>
             <h2 className="h-sm" style={{ color: 'inherit' }}>What if?</h2>
-            {changed && <button type="button" className="ulink" style={{ color: 'inherit', fontSize: 15 }} onClick={() => resetAnswers(item.id)}>Reset to my answers</button>}
           </div>
           <p style={{ fontSize: 15, opacity: 0.75, margin: '4px 0 18px' }}>Change an answer and watch the tags move.</p>
           <WhatIfSeg label="Fix it yourself?" value={a.diy} options={DIY_LABELS.map((l, i) => [i, l])} onChange={(v) => up({ diy: v as Answers['diy'] })} />
@@ -221,6 +245,16 @@ export default function Results() {
               <WhatIfBtn key={k} on={a.priority === k} onClick={() => up({ priority: k as Answers['priority'] })}>{l}</WhatIfBtn>
             ))}
           </div>
+          {changed && (
+            <Canvas onDrop={(c, z) => { if (c.kind !== 'original' || z !== 'restore') return false; resetAnswers(item.id); toast('Your original answers are back.'); }}>
+              <div style={{ marginTop: 18, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10, alignItems: 'center' }}>
+                <DragCard id="original" data={{ kind: 'original', label: 'Your original answers' }}>
+                  <span className="chip" style={{ minHeight: 44, gap: 8, fontSize: 14, background: '#F2C230', color: '#15201C', borderColor: '#F2C230' }}>My original answers<Grip light /></span>
+                </DragCard>
+                <DropZone id="restore" compact label="Restore" hint="Drop to undo these changes" release="Release to restore" accepts={['original']} icon={<Icon d={ICONS.reset} size={18} />} />
+              </div>
+            </Canvas>
+          )}
           <p style={{ fontSize: 13, opacity: 0.7, marginTop: 14 }}>Shop repair estimate for this {it.name.toLowerCase()}: about {rupeeShort(res.repairEstimate)} at a shop. Changes are saved to this item on your shelf.</p>
         </div>
       </div>

@@ -1,22 +1,30 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CATEGORIES, CATEGORY_ORDER } from '../data/categories';
 import { PATHS, PATH_ORDER } from '../data/paths';
 import { PRESETS } from '../data/presets';
+import type { PathId } from '../data/types';
 import { evaluate } from '../engine/engine';
 import { guess } from '../engine/match';
 import { useRun } from '../hooks/useRun';
 import { Sketch } from '../components/Sketch';
 import { Counter, dl, Icon, ICONS, Mat } from '../components/ui';
 import { CAT_ICONS } from './shared';
+import { Canvas, DragCard, DropZone, Grip } from '../components/Canvas';
+
+const SHORT: Record<PathId, string> = {
+  repair: 'Fix it and keep it',
+  reuse: 'Pass it on',
+  repurpose: 'Make something new',
+  replace: 'Buy smarter',
+  recycle: 'Recover the materials',
+};
 
 const COMPARE: [string, string, string, string][] = [
-  ['Weighs all five options', 'n', 'n', 'p'],
-  ['Shows its reasoning', 'p', 'n', 'n'],
-  ['Cost, time and effort side by side', 'p', 'n', 'n'],
-  ['Repurposing as a real option', 'n', 'n', 'p'],
-  ['Beyond electronics', 'p', 'y', 'p'],
-  ['History without an account', 'n', 'y', 'n'],
+  ['Compares all five options', 'n', 'n', 'p'],
+  ['Explains every score', 'p', 'n', 'n'],
+  ['Shows cost, time and effort', 'p', 'n', 'n'],
+  ['Works for any item', 'p', 'y', 'p'],
 ];
 
 function Mark({ v, ours }: { v: string; ours?: boolean }) {
@@ -35,8 +43,7 @@ export default function Home() {
   const [text, setText] = useState('');
   const laptop = useMemo(() => evaluate(PRESETS[0].answers), []);
 
-  const quick = (e: FormEvent) => {
-    e.preventDefault();
+  const quick = () => {
     const g = guess(text);
     const q = new URLSearchParams({ new: '1' });
     if (g) {
@@ -47,53 +54,81 @@ export default function Home() {
     nav('/diagnose?' + q.toString());
   };
 
+  // Canvas Protocol: drop a sample card or your own note onto the bench.
+  const onDrop = (card: { kind: string; preset?: unknown; cat?: unknown }, zone: string | null) => {
+    if (zone !== 'bench' && zone !== 'bench2' && zone !== 'bench3') return false;
+    if (card.kind === 'blank') { window.setTimeout(() => nav('/diagnose?new=1'), 380); return true; }
+    if (card.kind === 'category') { window.setTimeout(() => nav(`/diagnose?new=1&cat=${card.cat as string}`), 380); return true; }
+    if (card.kind === 'sample') {
+      const p = PRESETS.find((x) => x.id === card.preset);
+      if (!p) return false;
+      window.setTimeout(() => run(p.answers), 380);
+      return true;
+    }
+    if (card.kind === 'note' && text.trim()) { window.setTimeout(quick, 380); return true; }
+    return false;
+  };
+
   return (
-    <>
+    <Canvas onDrop={onDrop}>
       {/* ---------- hero ---------- */}
-      <section className="wrap" style={{ paddingTop: 72, paddingBottom: 64 }}>
-        <div className="split" style={{ alignItems: 'flex-start' }}>
-          <div style={{ flex: '1 1 400px', paddingTop: 20 }}>
-            
-            <h1 style={{ marginTop: 18, fontWeight: 800, letterSpacing: '-0.045em', lineHeight: 0.92 }}>
+      <section className="wrap" style={{ paddingTop: 80, paddingBottom: 72 }}>
+        <div className="split" style={{ alignItems: 'center' }}>
+          <div style={{ flex: '1 1 400px' }}>
+            <h1 style={{ fontWeight: 800, letterSpacing: '-0.045em', lineHeight: 0.92 }}>
               <span className="ln" style={{ fontSize: 'clamp(34px, 4.4vw, 54px)', color: 'var(--muted)', fontWeight: 600, letterSpacing: '-0.03em' }}>
-                <span style={{ ...dl(0.65), position: 'relative' }}>Throw it out.<span className="strike" aria-hidden="true" /></span>
+                <span style={{ ...dl(0.5), position: 'relative' }}>Throw it out.<span className="strike" aria-hidden="true" /></span>
               </span>
-              <span className="ln" style={{ marginTop: 10, fontSize: 'clamp(64px, 8.6vw, 116px)' }}><span style={dl(0.8)}>Fix it first.</span></span>
+              <span className="ln" style={{ marginTop: 10, fontSize: 'clamp(64px, 8.6vw, 116px)' }}><span style={dl(0.65)}>Fix it first.</span></span>
             </h1>
-            <p className="fu lede" style={{ ...dl(1.05), marginTop: 28, maxWidth: 480 }}>
-              A decision assistant for repair, reuse, repurpose, replace and recycle.</p>
-            <div className="fu row" style={{ ...dl(1.2), marginTop: 32, flexWrap: 'wrap', gap: 22 }}>
-              <Link to="/diagnose?new=1" className="btn btn-ink btn-lg sheen">Start a diagnosis</Link>
-              <Link to="/fixes" className="ulink">Browse common fixes</Link>
+            <p className="fu lede" style={{ ...dl(0.95), marginTop: 26, maxWidth: 440 }}>
+              A decision assistant for repair, reuse, repurpose, replace and recycle.
+            </p>
+            <div className="fu" style={{ ...dl(1.1), marginTop: 30 }}>
+              <span className="drag-hint">Drag a blank ticket onto the bench to start <span className="arrow"><Icon d="M5 12h14 M13 6l6 6-6 6" size={16} /></span></span>
+              <div className="row" style={{ marginTop: 10, flexWrap: 'wrap', gap: 22 }}>
+                <DragCard id="blank" nudge="Drag me onto the bench" data={{ kind: 'blank', label: 'Blank ticket: start a new diagnosis' }}>
+                  <div className="tagcard tag-yellow" style={{ clipPath: 'none', borderRadius: 14, padding: '14px 18px', width: 250 }}>
+                    <div className="between" style={{ alignItems: 'center', flexWrap: 'nowrap' }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, opacity: 0.75 }}>Blank ticket</span><Grip light />
+                    </div>
+                    <div className="disp" style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em', marginTop: 2 }}>Start a diagnosis</div>
+                  </div>
+                </DragCard>
+                <Link to="/fixes" className="ulink">Browse common fixes</Link>
+              </div>
             </div>
-            <div className="fu" style={{ ...dl(1.45), marginTop: 44, paddingTop: 22, borderTop: '1px solid var(--border)' }}>
-              <p className="muted" style={{ fontSize: 15, marginBottom: 12 }}>Or put a sample item on the bench and see a full result</p>
-              <div className="chip-row">
+            <div className="fu" style={{ ...dl(1.3), marginTop: 32 }}>
+              <span className="drag-hint">Or drag a sample onto the bench <span className="arrow"><Icon d="M5 12h14 M13 6l6 6-6 6" size={16} /></span></span>
+              <div className="chip-row" style={{ marginTop: 10 }}>
                 {PRESETS.map((p) => (
-                  <button key={p.id} type="button" className="chip lift" onClick={() => run(p.answers)}>
-                    <Icon d={p.icon} size={20} width={1.8} />{p.label}
-                  </button>
+                  <DragCard key={p.id} id={`sample-${p.id}`} data={{ kind: 'sample', preset: p.id, label: `Sample: ${p.label}` }}>
+                    <span className="chip" style={{ minHeight: 42, padding: '4px 12px', fontSize: 14, gap: 8 }}>
+                      <Icon d={p.icon} size={18} width={1.8} />{p.label}<Grip />
+                    </span>
+                  </DragCard>
                 ))}
               </div>
             </div>
           </div>
 
-          <div className="fi" style={{ ...dl(0.9), flex: '1.3 1 520px' }}>
+          <div className="fi" style={{ ...dl(0.8), flex: '1.3 1 520px' }}>
+            <DropZone id="bench" variant="bare" label="Drop it on the bench" release="Release to diagnose" hint="Drop a sample here to diagnose it" accepts={['sample', 'note', 'blank', 'category']}>
             <Mat>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'flex-start' }}>
                 <div style={{ flex: '1 1 320px', minWidth: 0, position: 'relative' }}>
-                  <Sketch kind="laptop" delay={1.2} label="Line drawing of a laptop with a loose charging port" />
-                  <div className="hand fi" style={{ ...dl(2.4), position: 'absolute', right: 0, top: '50%', fontSize: 23, lineHeight: 1.15, color: 'var(--marker)', textAlign: 'right' }}>loose DC port?<br />2 years old</div>
+                  <Sketch kind="laptop" delay={1.1} label="Line drawing of a laptop with a loose charging port" />
+                  <div className="hand fi" style={{ ...dl(2.3), position: 'absolute', right: 0, top: '50%', fontSize: 23, lineHeight: 1.15, color: 'var(--marker)', textAlign: 'right' }}>loose DC port?<br />2 years old</div>
                 </div>
                 <div style={{ flex: '0 0 168px', display: 'flex', justifyContent: 'center', margin: '-30px auto 0' }}>
-                  <div className="swing" style={dl(1.6)}>
+                  <div className="swing" style={dl(1.5)}>
                     <div className="string" style={{ height: 46, background: 'var(--chalkDim)' }} />
                     <div className="tagcard tag-yellow" style={{ width: 156, padding: '30px 16px 18px' }}>
                       <span className="hole" style={{ background: 'var(--mat)', boxShadow: 'none' }} />
                       <div style={{ fontSize: 13, fontWeight: 700, opacity: 0.75 }}>Our verdict</div>
                       <div className="disp" style={{ fontSize: 30, fontWeight: 800, lineHeight: 1, letterSpacing: '-0.03em', marginTop: 4 }}>{PATHS[laptop.top].name}</div>
                       <div className="row" style={{ marginTop: 14, gap: 4, alignItems: 'baseline' }}>
-                        <span className="disp" style={{ fontSize: 40, fontWeight: 800, lineHeight: 1, letterSpacing: '-0.04em' }}><Counter value={laptop.scores[laptop.top]} delay={2} /></span>
+                        <span className="disp" style={{ fontSize: 40, fontWeight: 800, lineHeight: 1, letterSpacing: '-0.04em' }}><Counter value={laptop.scores[laptop.top]} delay={1.9} /></span>
                         <span style={{ fontSize: 14, fontWeight: 700 }}>/ 100</span>
                       </div>
                       <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1.5px dashed rgba(21,32,28,.35)', fontSize: 13, fontWeight: 700, lineHeight: 1.35 }}>Laptop that won't charge</div>
@@ -102,31 +137,22 @@ export default function Home() {
                 </div>
               </div>
             </Mat>
+            </DropZone>
           </div>
         </div>
       </section>
 
-      {/* ---------- the method ---------- */}
+      {/* ---------- the five paths ---------- */}
       <section className="wrap" style={{ paddingBottom: 96 }}>
-        <div className="fu between" style={{ ...dl(1.6), paddingBottom: 18, borderBottom: '2px solid var(--text)', alignItems: 'baseline' }}>
-          
-        
-        </div>
-        <ol style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+        <h2 className="h-md fu" style={{ ...dl(1.5), paddingBottom: 16, borderBottom: '2px solid var(--text)' }}>Five options, ranked for your item.</h2>
+        <ol style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
           {PATH_ORDER.map((p, i) => (
-            <li key={p} className="fu" style={{ ...dl(1.7 + i * 0.1), padding: '22px 20px 18px 0', borderBottom: '1px solid var(--border)' }}>
-              <div className="row" style={{ gap: 10 }}>
-                <span className="disp muted" style={{ fontSize: 15, fontWeight: 700 }}>{i + 1}</span>
-                <span style={{ flex: 1, height: 4, borderRadius: 2, background: PATHS[p].color }} />
-              </div>
-              <h3 className="row" style={{ marginTop: 14, gap: 8, fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' }}>
+            <li key={p} className="fu" style={{ ...dl(1.6 + i * 0.08), padding: '20px 18px 20px 0', borderBottom: '1px solid var(--border)' }}>
+              <span style={{ display: 'block', height: 4, borderRadius: 2, background: PATHS[p].color }} />
+              <h3 className="row" style={{ marginTop: 16, gap: 8, fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' }}>
                 <Icon d={PATHS[p].icon} stroke={PATHS[p].color} width={2.2} />{PATHS[p].name}
               </h3>
-              <p className="muted" style={{ fontSize: 15, marginTop: 2 }}>{PATHS[p].line}</p>
-              <div className="dots" style={{ justifyContent: 'flex-start', marginTop: 12 }} role="img" aria-label={`Keeps ${PATHS[p].keepsLevel} of 5: ${PATHS[p].keeps}`}>
-                {Array.from({ length: 5 }, (_, j) => <i key={j} style={{ width: 14, height: 14, borderRadius: 3, background: j < PATHS[p].keepsLevel ? PATHS[p].color : 'var(--surface2)' }} />)}
-              </div>
-              <p className="muted" style={{ fontSize: 13, marginTop: 6 }}>Keeps: {PATHS[p].keeps.toLowerCase()}</p>
+              <p className="muted" style={{ fontSize: 15, marginTop: 2 }}>{SHORT[p]}</p>
             </li>
           ))}
         </ol>
@@ -135,53 +161,48 @@ export default function Home() {
       {/* ---------- how it works ---------- */}
       <section className="band section">
         <div className="wrap">
-          <div className="between" style={{ marginBottom: 44, alignItems: 'flex-end' }}>
-            <h2 className="h-lg" style={{ maxWidth: 640 }}>A decision you can check, not just trust.</h2>
-           
-          </div>
+          <h2 className="h-lg" style={{ marginBottom: 40 }}>How it works</h2>
           <div className="grid-auto" style={{ ['--min' as string]: '300px', gap: 20 }}>
             <article className="card" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
-              <div style={{ padding: '26px 26px 20px' }}>
-                <div className="kicker">Step 1</div>
-                <h3 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', margin: '4px 0 6px' }}>Describe it</h3>
-                <p className="muted" style={{ fontSize: 16 }}>Tap what fits. Five short screens, no typing required.</p>
+              <div style={{ padding: '24px 26px 18px' }}>
+                <div className="kicker">1</div>
+                <h3 style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em', margin: '2px 0 4px' }}>Describe it</h3>
+                <p className="muted" style={{ fontSize: 16 }}>Five quick screens, all taps.</p>
               </div>
-              <div style={{ marginTop: 'auto', padding: '22px 26px', background: 'var(--surface2)', borderTop: '1px solid var(--border)' }} aria-hidden="true">
-                <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>What's wrong with it?</div>
+              <div style={{ marginTop: 'auto', padding: '20px 26px', background: 'var(--surface2)', borderTop: '1px solid var(--border)' }} aria-hidden="true">
                 <div className="chip-row">
                   <span className="chip" aria-pressed="true" style={{ minHeight: 36, padding: '4px 12px', fontSize: 14 }}>Won't charge</span>
                   <span className="chip" style={{ minHeight: 36, padding: '4px 12px', fontSize: 14 }}>Battery drains fast</span>
                   <span className="chip" style={{ minHeight: 36, padding: '4px 12px', fontSize: 14 }}>Cracked screen</span>
                 </div>
                 <div className="progress" style={{ marginTop: 16, height: 6 }}><span style={{ width: '60%', background: 'var(--text)' }} /></div>
-                <div className="muted" style={{ marginTop: 6, fontSize: 13 }}>Screen 3 of 5</div>
               </div>
             </article>
             <article className="card" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
-              <div style={{ padding: '26px 26px 20px' }}>
-                <div className="kicker">Step 2</div>
-                <h3 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', margin: '4px 0 6px' }}>See the working</h3>
-                <p className="muted" style={{ fontSize: 16 }}>All five paths are scored, and every point is itemised.</p>
+              <div style={{ padding: '24px 26px 18px' }}>
+                <div className="kicker">2</div>
+                <h3 style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em', margin: '2px 0 4px' }}>See why</h3>
+                <p className="muted" style={{ fontSize: 16 }}>Every point is explained.</p>
               </div>
-              <div style={{ marginTop: 'auto', padding: '18px 26px', background: 'var(--surface2)', borderTop: '1px solid var(--border)', fontSize: 15 }}>
-                {laptop.reasons.repair.slice(0, 5).map((r, i) => (
+              <div style={{ marginTop: 'auto', padding: '16px 26px', background: 'var(--surface2)', borderTop: '1px solid var(--border)', fontSize: 15 }}>
+                {laptop.reasons.repair.slice(1, 4).map((r, i) => (
                   <div key={i} className="between" style={{ padding: '4px 0', flexWrap: 'nowrap' }}>
                     <span>{r.label}</span>
-                    <strong style={{ color: r.kind === 'base' ? 'var(--text)' : r.delta > 0 ? 'var(--pos)' : 'var(--neg)' }}>{r.kind === 'base' ? r.delta : (r.delta > 0 ? '+' : '−') + Math.abs(r.delta)}</strong>
+                    <strong style={{ color: r.delta > 0 ? 'var(--pos)' : 'var(--neg)' }}>{(r.delta > 0 ? '+' : '−') + Math.abs(r.delta)}</strong>
                   </div>
                 ))}
-                <div className="between" style={{ marginTop: 8, paddingTop: 8, borderTop: '2px solid var(--text)', fontWeight: 700 }}><span>Repair</span><span className="disp" style={{ fontSize: 20 }}>{laptop.scores.repair}</span></div>
+                <div className="between" style={{ marginTop: 6, paddingTop: 8, borderTop: '2px solid var(--text)', fontWeight: 700 }}><span>Repair</span><span className="disp" style={{ fontSize: 20 }}>{laptop.scores.repair}</span></div>
               </div>
             </article>
             <article className="card" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
-              <div style={{ padding: '26px 26px 20px' }}>
-                <div className="kicker">Step 3</div>
-                <h3 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', margin: '4px 0 6px' }}>Follow the plan</h3>
-                <p className="muted" style={{ fontSize: 16 }}>Pick a path and get the steps, tools and places to go.</p>
+              <div style={{ padding: '24px 26px 18px' }}>
+                <div className="kicker">3</div>
+                <h3 style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em', margin: '2px 0 4px' }}>Act on it</h3>
+                <p className="muted" style={{ fontSize: 16 }}>A step-by-step plan.</p>
               </div>
-              <div style={{ marginTop: 'auto', padding: '18px 26px', background: 'var(--surface2)', borderTop: '1px solid var(--border)', fontSize: 15 }} aria-hidden="true">
-                {[['Try another charger and socket', true], ['Check the port for wobble', true], ['Get a quote from a repair shop', false], ['Save the plan to my shelf', false]].map(([t, done], i) => (
-                  <div key={i} className="row" style={{ padding: '6px 0', gap: 10 }}>
+              <div style={{ marginTop: 'auto', padding: '16px 26px', background: 'var(--surface2)', borderTop: '1px solid var(--border)', fontSize: 15 }} aria-hidden="true">
+                {[['Try another charger', true], ['Check the port', true], ['Get a repair quote', false]].map(([t, done], i) => (
+                  <div key={i} className="row" style={{ padding: '5px 0', gap: 10 }}>
                     <span style={{ width: 20, height: 20, borderRadius: 5, display: 'grid', placeItems: 'center', background: done ? 'var(--pos)' : 'transparent', border: done ? 0 : '2px solid var(--muted)' }}>
                       {done && <Icon d={ICONS.check} size={13} width={3.5} stroke="var(--surface)" />}
                     </span>
@@ -196,16 +217,13 @@ export default function Home() {
 
       {/* ---------- why different ---------- */}
       <section className="section">
-        <div className="wrap split">
-          <div style={{ flex: '1 1 340px' }}>
-            <h2 className="h-lg">Other tools start after you've decided.</h2>
-           
-          </div>
-          <div className="scroll-x" style={{ flex: '1.6 1 560px' }}>
+        <div className="wrap split" style={{ alignItems: 'center' }}>
+          <h2 className="h-lg" style={{ flex: '1 1 300px' }}>Why Fix It First</h2>
+          <div className="scroll-x" style={{ flex: '2 1 560px' }}>
             <table className="tbl" style={{ minWidth: 560 }}>
               <thead>
                 <tr>
-                  <th scope="col"><span className="sr">Capability</span></th>
+                  <th scope="col"><span className="sr">Feature</span></th>
                   <th scope="col" style={{ textAlign: 'center' }}>Repair guides</th>
                   <th scope="col" style={{ textAlign: 'center' }}>Recycling maps</th>
                   <th scope="col" style={{ textAlign: 'center' }}>AI scanners</th>
@@ -228,39 +246,54 @@ export default function Home() {
 
       {/* ---------- categories ---------- */}
       <section className="wrap" style={{ paddingBottom: 96 }}>
-        <div className="between" style={{ marginBottom: 36, alignItems: 'flex-end' }}>
-          <h2 className="h-lg" style={{ maxWidth: 640 }}>For the whole house, not just gadgets.</h2>
-          <Link to="/fixes" className="ulink">See common fixes</Link>
+        <div className="between" style={{ marginBottom: 32, alignItems: 'flex-end' }}>
+          <h2 className="h-lg">For the whole house</h2>
+          <span className="drag-hint"><Grip /> Drag a category onto the workbench to start with it</span>
         </div>
-        <div className="pegboard" style={{ borderRadius: 24, border: '1px solid var(--border)', padding: '40px 28px 32px' }}>
-          <div className="grid-auto" style={{ ['--min' as string]: '220px', gap: '34px 22px' }}>
+        <div className="pegboard" style={{ borderRadius: 24, border: '1px solid var(--border)', padding: '38px 26px 28px' }}>
+          <div className="grid-auto" style={{ ['--min' as string]: '200px', gap: '30px 20px' }}>
             {CATEGORY_ORDER.map((c) => (
-              <Link key={c} to={`/diagnose?new=1&cat=${c}`} className="card hang" style={{ position: 'relative', display: 'block', padding: '26px 18px 18px', borderRadius: 12 }}>
-                <span className="peg" aria-hidden="true" />
-                <span className="row" style={{ gap: 10 }}>
+              <DragCard key={c} id={`cat-${c}`} data={{ kind: 'category', cat: c, label: `${CATEGORIES[c].name} category` }}>
+                <div className="card row" style={{ position: 'relative', padding: '24px 18px 18px', borderRadius: 12, gap: 12 }}>
+                  <span className="peg" aria-hidden="true" />
                   <Icon d={CAT_ICONS[c]} size={24} width={1.8} />
-                  <span className="disp" style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-0.01em' }}>{CATEGORIES[c].name}</span>
-                </span>
-                <span className="muted" style={{ display: 'block', marginTop: 8, fontSize: 15, lineHeight: 1.45 }}>{CATEGORIES[c].blurb}</span>
-              </Link>
+                  <span className="disp" style={{ fontSize: 19, fontWeight: 700, letterSpacing: '-0.01em', flex: 1 }}>{CATEGORIES[c].name}</span>
+                  <Grip />
+                </div>
+              </DragCard>
             ))}
+            <DropZone id="bench3" label="Workbench" hint="Drop a category here to start" release="Release to start" accepts={['category']}
+              icon={<Icon d={PATHS.repair.icon} size={22} />} style={{ minHeight: 0 }} />
           </div>
         </div>
       </section>
 
       {/* ---------- final call to action ---------- */}
       <section className="wrap" style={{ paddingBottom: 96 }}>
-        <Mat style={{ borderRadius: 28, padding: 'clamp(40px, 6vw, 80px)' }}>
-          <h2 style={{ fontSize: 'clamp(42px, 6vw, 84px)', lineHeight: 0.95, letterSpacing: '-0.045em', fontWeight: 800, color: 'var(--chalk)' }}>What broke today?</h2>
-          <p style={{ marginTop: 18, fontSize: 19, maxWidth: 540, opacity: 0.85 }}>Describe it in a few words. We'll recognise the item and fill in what we can.</p>
-          <form onSubmit={quick} className="row" style={{ marginTop: 32, flexWrap: 'wrap', maxWidth: 700 }}>
-            <label htmlFor="quick" className="sr">What's broken?</label>
-            <input id="quick" className="input" value={text} onChange={(e) => setText(e.target.value)} placeholder="e.g. kettle stopped heating" style={{ flex: '1 1 300px', minHeight: 56, background: '#fff', color: '#15201C', border: '2px solid transparent', fontSize: 17 }} />
-            <button type="submit" className="btn btn-tag btn-lg sheen">Start a diagnosis</button>
-          </form>
-          <p style={{ marginTop: 16, fontSize: 15, opacity: 0.8 }}>No account needed. Your items stay in this browser.</p>
+        <Mat style={{ borderRadius: 28, padding: 'clamp(40px, 6vw, 72px)' }}>
+          <h2 style={{ fontSize: 'clamp(42px, 6vw, 80px)', lineHeight: 0.95, letterSpacing: '-0.045em', fontWeight: 800, color: 'var(--chalk)' }}>What broke today?</h2>
+          <div style={{ marginTop: 28, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20, alignItems: 'stretch' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <label htmlFor="quick" className="sr">What's broken?</label>
+              <input id="quick" className="input" value={text} onChange={(e) => setText(e.target.value)} placeholder="e.g. kettle stopped heating" style={{ minHeight: 56, background: '#fff', color: '#15201C', border: '2px solid transparent', fontSize: 17 }} />
+              {text.trim() ? (
+                <DragCard id="note" data={{ kind: 'note', label: `Your note: ${text.trim()}` }}>
+                  <div className="tagcard tag-yellow" style={{ clipPath: 'none', borderRadius: 14, padding: '14px 16px' }}>
+                    <div className="between" style={{ alignItems: 'center', flexWrap: 'nowrap' }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, opacity: 0.75 }}>Your note</span><Grip light />
+                    </div>
+                    <div className="hand" style={{ fontSize: 26, lineHeight: 1.15, marginTop: 2 }}>{text.trim().slice(0, 60)}</div>
+                  </div>
+                </DragCard>
+              ) : (
+                <p style={{ fontSize: 15, opacity: 0.8 }}>Type it above and it becomes a note you can drag onto the bench.</p>
+              )}
+            </div>
+            <DropZone id="bench2" label="Workbench" hint="Drop your note here to start" release="Release to start the diagnosis" accepts={['note']}
+              icon={<Icon d={PATHS.repair.icon} size={22} />} />
+          </div>
         </Mat>
       </section>
-    </>
+    </Canvas>
   );
 }

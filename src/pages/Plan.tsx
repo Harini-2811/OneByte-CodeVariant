@@ -9,6 +9,7 @@ import { kg } from '../engine/format';
 import { useSession } from '../state/session';
 import { dl, Dots, Icon, ICONS, Lines, Mat } from '../components/ui';
 import { Missing } from './shared';
+import { Canvas, DragCard, DropZone, Grip, ToolTray } from '../components/Canvas';
 
 const MATERIAL_FOR: Record<CategoryId, string[]> = {
   electronics: ['ewaste', 'batteries'], appliances: ['ewaste', 'metal'], cables: ['ewaste'], furniture: ['wood', 'metal'],
@@ -39,10 +40,53 @@ export default function Plan() {
   const matIds = a.category === 'other' ? (a.powered ? ['ewaste', 'batteries'] : ['metal', 'plastic', 'wood']) : MATERIAL_FOR[a.category];
   const mats = MATERIALS.filter((m) => matIds.includes(m.id));
 
-  const save = () => {
-    decide(item.id, p);
-    toast(`Saved: ${PATHS[p].name.toLowerCase()} for your ${name.toLowerCase()}.`);
+  const todoIdx = plan.steps.map((_, i) => i).filter((i) => !item.checks[keyOf(i)]);
+  const doneIdx = plan.steps.map((_, i) => i).filter((i) => !!item.checks[keyOf(i)]);
+
+  const onDrop = (card: { kind: string; index?: unknown }, zone: string | null) => {
+    if (card.kind === 'step' && typeof card.index === 'number') {
+      const on = !!item.checks[keyOf(card.index)];
+      if ((zone === 'done' && !on) || (zone === 'todo' && on)) { toggleCheck(item.id, keyOf(card.index)); return true; }
+      return false;
+    }
+    if (card.kind === 'decision') {
+      if (zone === 'shelf' && !decided) { decide(item.id, p); toast(`Saved: ${PATHS[p].name.toLowerCase()} for your ${name.toLowerCase()}.`); return true; }
+      if (zone === 'slot' && decided) { decide(item.id, undefined); toast('Decision removed.'); return true; }
+    }
+    return false;
   };
+
+  // A plain function (not a component) so cards are not remounted on every render.
+  const stepCard = (i: number) => {
+    const s = plan.steps[i];
+    const on = !!item.checks[keyOf(i)];
+    return (
+      <DragCard key={i} id={`step-${i}`} data={{ kind: 'step', index: i, label: `Step ${i + 1}, ${s.title}` }}>
+        <div className="card" style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '14px 14px', borderRadius: 14, background: 'var(--surface)' }}>
+          <span style={{ width: 26, height: 26, flex: 'none', borderRadius: 7, display: 'grid', placeItems: 'center', fontSize: 13, fontWeight: 700, background: on ? PATHS[p].color : 'var(--surface2)', color: on ? 'var(--bg)' : 'var(--text)' }}>
+            {on ? <Icon d={ICONS.check} size={15} width={3.5} stroke="var(--bg)" /> : i + 1}
+          </span>
+          <span style={{ flex: 1, minWidth: 0 }}>
+            <span style={{ display: 'block', fontWeight: 700, color: on ? 'var(--muted)' : 'var(--text)', textDecoration: on ? 'line-through' : 'none' }}>{s.title}</span>
+            <span className="muted" style={{ display: 'block', fontSize: 14, lineHeight: 1.45 }}>{s.detail}</span>
+          </span>
+          <Grip />
+        </div>
+      </DragCard>
+    );
+  };
+
+  const ticket = (
+    <DragCard id="decision" data={{ kind: 'decision', label: `Decision ticket: ${PATHS[p].name} your ${name.toLowerCase()}` }}>
+      <div className="tagcard" style={{ clipPath: 'none', borderRadius: 14, padding: '16px 16px 14px', background: decided ? PATHS[p].color : 'var(--marker)', color: decided ? 'var(--bg)' : '#15201C' }}>
+        <div className="between" style={{ alignItems: 'center', flexWrap: 'nowrap' }}>
+          <span style={{ fontSize: 13, fontWeight: 700, opacity: 0.8 }}>{decided ? 'Decided' : 'Decision ticket'}</span>
+          <Grip light />
+        </div>
+        <div className="disp" style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.15, marginTop: 4 }}>{PATHS[p].name} my {name.toLowerCase()}</div>
+      </div>
+    </DragCard>
+  );
 
   return (
     <section className="wrap" style={{ paddingTop: 40, paddingBottom: 96 }}>
@@ -61,7 +105,7 @@ export default function Plan() {
         <div className="card fu" role="alert" style={{ ...dl(0.9), marginTop: 32, padding: 32, borderColor: 'var(--neg)' }}>
           <h2 className="h-md row" style={{ gap: 10 }}><Icon d={ICONS.warn} size={26} stroke="var(--neg)" />This option is blocked for safety.</h2>
           <p className="lede muted" style={{ marginTop: 10 }}>{blocked}. Choose one of the other options instead; we recommend {PATHS[res.top].name.toLowerCase()}.</p>
-          <Link to={`/item/${item.id}/plan/${res.top}`} className="btn btn-ink sheen" style={{ marginTop: 20 }}>Open the {PATHS[res.top].name.toLowerCase()} plan</Link>
+          <Link to={`/item/${item.id}/plan/${res.top}`} className="ulink" style={{ display: 'inline-block', marginTop: 20 }}>Open the {PATHS[res.top].name.toLowerCase()} plan</Link>
         </div>
       ) : (
         <>
@@ -98,40 +142,41 @@ export default function Plan() {
                   </div>
                 )}
               </div>
-              <div className="between" style={{ marginTop: 14, alignItems: 'baseline' }}>
-                <span className="muted" style={{ fontSize: 15 }}>Tick steps off as you go. Progress is saved.</span>
-                <strong className="tnum">{done} of {plan.steps.length} done</strong>
-              </div>
-              <div className="progress" style={{ margin: '10px 0 6px' }} role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Plan progress"><span style={{ width: pct + '%', background: PATHS[p].color }} /></div>
-              <ol key={p + mode} style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-                {plan.steps.map((s, i) => {
-                  const on = !!item.checks[keyOf(i)];
-                  return (
-                    <li key={i} className="fu" style={{ ...dl(0.1 + i * 0.06), borderBottom: '1px solid var(--border)' }}>
-                      <button type="button" aria-pressed={on} onClick={() => toggleCheck(item.id, keyOf(i))} style={{ width: '100%', display: 'flex', gap: 14, alignItems: 'flex-start', padding: '16px 0', background: 'none', border: 0, textAlign: 'left', cursor: 'pointer' }}>
-                        <span style={{ width: 26, height: 26, flex: 'none', marginTop: 1, borderRadius: 7, border: `2px solid ${on ? PATHS[p].color : 'var(--muted)'}`, background: on ? PATHS[p].color : 'transparent', display: 'grid', placeItems: 'center', transition: 'background-color .25s, border-color .25s' }}>
-                          {on && <Icon d={ICONS.check} size={15} width={3.5} stroke="var(--bg)" />}
-                        </span>
-                        <span>
-                          <span style={{ display: 'block', fontWeight: 700, color: on ? 'var(--muted)' : 'var(--text)', textDecoration: on ? 'line-through' : 'none' }}>{i + 1}. {s.title}</span>
-                          <span className="muted" style={{ display: 'block', fontSize: 15 }}>{s.detail}</span>
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ol>
-              <div className="row noprint" style={{ marginTop: 22, flexWrap: 'wrap', gap: 14 }}>
-                {decided ? (
-                  <>
-                    <span className="stamp disp" style={{ padding: '8px 18px', border: `3px solid ${PATHS[p].color}`, color: PATHS[p].color, borderRadius: 8, fontSize: 22, fontWeight: 800 }}>Decided</span>
-                    <Link to="/shelf" className="btn btn-line">Open my shelf</Link>
-                    <button type="button" className="ulink muted" onClick={() => decide(item.id, undefined)}>Undo</button>
-                  </>
-                ) : (
-                  <button type="button" className="btn btn-ink btn-lg sheen" onClick={save}>Save decision to my shelf</button>
-                )}
-                <button type="button" className="btn btn-line" onClick={() => window.print()}><Icon d={ICONS.print} size={16} />Print plan</button>
+              {/* Canvas Protocol: steps move from To do to Done, and the decision ticket goes onto the shelf. */}
+              <Canvas onDrop={onDrop}>
+                <div className="between" style={{ marginTop: 14, alignItems: 'baseline' }}>
+                  <span className="drag-hint"><Grip /> Drag each step into Done as you finish it.</span>
+                  <strong className="tnum">{done} of {plan.steps.length} done</strong>
+                </div>
+                <div className="progress" style={{ margin: '10px 0 16px' }} role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Plan progress"><span style={{ width: pct + '%', background: PATHS[p].color }} /></div>
+                <div key={p + mode} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14 }}>
+                  <DropZone id="todo" variant="list" label="To do" accepts={['step']} tone="var(--muted)" release="Release to move it back to To do"
+                    hint={todoIdx.length ? 'Drag a step here to undo it' : 'Everything is done.'} icon={<Icon d={ICONS.reset} size={18} />}>
+                    {todoIdx.map(stepCard)}
+                  </DropZone>
+                  <DropZone id="done" variant="list" label="Done" accepts={['step']} tone={PATHS[p].color} release="Release to mark it done"
+                    hint="Drop a step here when it's finished" icon={<Icon d={ICONS.check} size={18} width={2.6} />}>
+                    {doneIdx.map(stepCard)}
+                  </DropZone>
+                </div>
+
+                <h3 className="h-sm" style={{ marginTop: 28 }}>Your decision</h3>
+                <div className="noprint" style={{ marginTop: 12, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14 }}>
+                  <DropZone id="slot" variant="list" label="Not decided yet" accepts={['decision']} tone="var(--muted)" release="Release to undo your decision"
+                    hint={decided ? 'Drag the ticket back here to undo' : 'Drag this ticket onto My shelf'}>
+                    {!decided && ticket}
+                  </DropZone>
+                  <DropZone id="shelf" variant="list" label="My shelf" accepts={['decision']} tone={PATHS[p].color} release="Release to save your decision"
+                    hint={decided ? 'Saved to your shelf.' : 'Drop the ticket here to save this as your decision'} icon={<Icon d={ICONS.check} size={18} width={2.6} />}>
+                    {decided && ticket}
+                  </DropZone>
+                </div>
+              </Canvas>
+              <div className="noprint" style={{ marginTop: 22 }}>
+                <ToolTray card="This plan" cardIcon={<Icon d={ICONS.check} size={16} />} tools={[
+                  { id: 'print', label: 'Print', hint: 'Drop to print this plan', release: 'Release to print', icon: <Icon d={ICONS.print} size={18} />, run: () => window.print() },
+                ]} />
+                {decided && <Link to="/shelf" className="ulink" style={{ display: 'inline-block', marginTop: 14 }}>Open my shelf</Link>}
               </div>
             </div>
 
@@ -146,7 +191,7 @@ export default function Plan() {
                 {plan.links.length > 0 && (
                   <div style={{ display: 'grid', gap: 8, marginTop: 14 }} className="noprint">
                     {plan.links.map((l) => (
-                      <a key={l.href} href={l.href} target="_blank" rel="noreferrer" className="btn btn-line btn-sm" style={{ justifyContent: 'space-between' }}>
+                      <a key={l.href} href={l.href} target="_blank" rel="noreferrer" className="ulink navlink" style={{ fontSize: 15 }}>
                         {l.label}<Icon d={ICONS.external} size={16} /><span className="sr">(opens in a new tab)</span>
                       </a>
                     ))}

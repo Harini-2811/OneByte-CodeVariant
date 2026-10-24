@@ -19,8 +19,8 @@ export function Missing({ title = 'Nothing on the bench here.', text = "This ite
       <h1 className="h-xl"><Lines lines={[title]} /></h1>
       <p className="lede fu muted" style={{ marginTop: 18, animationDelay: '.7s' }}>{text}</p>
       <div className="row fu" style={{ marginTop: 28, flexWrap: 'wrap', animationDelay: '.85s' }}>
-        <Link to="/diagnose?new=1" className="btn btn-tag sheen">Start a diagnosis</Link>
-        <Link to="/shelf" className="btn btn-line">Open my shelf</Link>
+        <Link to="/diagnose?new=1" className="ulink">Start a diagnosis</Link>
+        <Link to="/shelf" className="ulink">Open my shelf</Link>
       </div>
     </section>
   );

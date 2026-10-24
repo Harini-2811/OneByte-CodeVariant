@@ -35,8 +35,8 @@ export function NotFound() {
           <h1 className="h-xl" style={{ marginTop: 10 }}><Lines lines={["This page didn't", 'survive the repair.']} /></h1>
           <p className="lede muted fu" style={{ marginTop: 18, animationDelay: '.8s' }}>The link may be old, or the page may have moved.</p>
           <div className="row fu" style={{ marginTop: 26, flexWrap: 'wrap', animationDelay: '.95s' }}>
-            <Link to="/" className="btn btn-ink sheen">Back to the bench</Link>
-            <Link to="/diagnose?new=1" className="btn btn-line">Start a diagnosis</Link>
+            <Link to="/" className="ulink">Back to the bench</Link>
+            <Link to="/diagnose?new=1" className="ulink">Start a diagnosis</Link>
           </div>
         </div>
         <div className="fi" style={{ flex: '1 1 320px', animationDelay: '.6s' }}>
