@@ -1,0 +1,95 @@
+# Fix It First
+
+**Throw it out? Fix it first.** A guided decision assistant that compares all five circular-economy paths (Repair, Reuse, Repurpose, Replace, Recycle) for any broken or worn-out item, and shows exactly why one comes out on top.
+
+Built for **Code Variant — Build 01, Problem Statement 01: "Fix It First"**.
+
+---
+
+## The problem
+
+When something breaks, people rarely know whether to repair, reuse, repurpose, replace or recycle it, so most default to binning it and buying new. Existing tools each answer one question: repair guides assume you will repair, recycling maps assume you will recycle, resale apps assume you will replace. Nothing helps at the moment of failure, across all five options, with reasoning you can check.
+
+## What Fix It First does
+
+| Gap in existing tools | How Fix It First fills it |
+|---|---|
+| No unified five-path comparison | All five options hang side by side on the **Decision Rail**, ranked and scored |
+| Opaque AI recommendations | A transparent **rules engine**: every point is itemised in a **Why?** ledger, and **How we score** shows the full rulebook |
+| No help at the point of failure | A 90-second, tap-based **diagnosis wizard**, or describe the item in a sentence |
+| Cost, time and effort ignored | Every option shows cost range, time, difficulty, effort and planet impact |
+| Repurposing is an afterthought | Repurpose is a first-class path with ideas, materials, effort and safety notes |
+| Electronics over-represented | 7 categories and 35 item types: electronics, appliances, furniture, clothing, cables, kitchenware, accessories |
+| No lightweight history | **My shelf** keeps every item for the session, with stats, comparison and export, no login |
+
+## The experience
+
+The whole product is one metaphor: **a repair workbench**. Items are line-drawn on a green cutting mat, the technician's notes are handwritten, and verdicts hang as yellow repair tags.
+
+1. **Home**: the headline repairs itself; one-click sample items (including a safety case) jump straight to a result; a quick "What broke today?" box recognises the item and symptom from plain words.
+2. **Diagnose** (5 steps): category and item, age and condition, problems with severity, what matters to you, review. The item draws itself on the mat as you answer. Drafts save automatically.
+3. **Diagnosing**: a short scan sequence while each path is weighed (and unsafe ones ruled out).
+4. **Decision Rail**: five tags on a rail, ranked. Tap **Why?** for the itemised score. Change anything in **What if?** (DIY skill, budget, warranty, priority) and the tags physically re-rank live. Switch to a table view, share a link, or print.
+5. **Work order**: a step-by-step plan for the chosen path, with a DIY or professional toggle for repairs, tools, questions to ask, links to find nearby services, repurpose idea cards and material-specific recycling guidance. Progress is saved.
+6. **My shelf**: session stats (items diagnosed, kept in use, estimated CO₂e avoided, money kept vs buying new), filters, side-by-side comparison of up to 3 items, JSON export and clear.
+7. **Common fixes**: a searchable pegboard of common problems, repurpose ideas and a "Recycle right" material guide. Any problem starts a pre-filled diagnosis.
+
+### Safety first
+Hazards (swollen battery, exposed wire, burning smell, flaking non-stick coating) trigger an immediate warning, **block Reuse and Repurpose**, rule out DIY repair, and steer towards professional repair or safe recycling.
+
+## The decision engine
+
+`src/engine/engine.ts` is a pure, unit-tested function: `evaluate(answers) → result`.
+
+- Each path starts from a **category baseline**.
+- Rules for age, usage, condition, whether it works, warranty, each symptom × severity, safety, DIY skill, repair access, budget vs estimated repair cost (including the "repair costs over 60% of new" rule), time pressure and the user's top priority each **add or subtract points and record a plain-language reason**.
+- Scores are clamped to 1–99; blocked paths are 0. The ranking, confidence (gap between the top two), cost/time/difficulty/effort/eco trade-offs and estimated CO₂e and money saved are returned together.
+- Because it is pure, **What if?** simply re-runs it on every change.
+
+Costs are typical Indian ranges in rupees and CO₂e figures are rounded, indicative footprints. The interface labels them as estimates.
+
+## Design and motion
+
+- **Palette**: workshop grey, ink green, cutting-mat green, caution-tag yellow. Path colours appear only on data.
+- **Type**: Bricolage Grotesque (display), Atkinson Hyperlegible (body, chosen for readability), Caveat (technician notes only).
+- **Light and dark mode**: follows the system, remembers the choice, never flashes on load, and switches with a circular reveal. Dark mode is a "workshop at night" palette, not inverted colours.
+- **Motion**: a measuring tape pulls across the top on every page change; headings rise line by line with a focus pull; sketches draw themselves; tags drop and swing onto the rail and re-rank with spring physics; scores count up. A calm ambient background (drifting grid, slow light, a lamp that follows the pointer) runs behind everything.
+- **Accessibility**: semantic HTML, skip link, visible focus, keyboard-operable everything, ARIA for toggles, progress and live regions, sufficient contrast in both themes, and **all motion disabled under `prefers-reduced-motion`**.
+- **Responsive**: from 360px phones to wide desktops; the rail becomes a vertical list on small screens.
+
+## Tech
+
+React 18 · TypeScript (strict) · Vite · React Router · Framer Motion · Vitest. No backend: state lives in `sessionStorage`, shared results travel in the URL.
+
+```
+src/
+  data/         categories, items, symptoms, paths, guides, presets (all content is data)
+  engine/       engine.ts (rules), format.ts, match.ts (plain-words matcher), engine.test.ts
+  state/        session store (sessionStorage), share-link encoding
+  components/   shell (header, theme, background, tape), sketch, scoring guide, UI primitives
+  pages/        Home, Diagnose, Analysing, Results, Plan, Shelf, Library, Misc (shared link, 404)
+  styles/       app.css (design tokens and system)
+```
+
+## Run it
+
+```bash
+npm install
+npm run dev        # http://localhost:5173
+npm test           # engine unit tests
+npm run build      # type-check + production build to dist/
+npm run preview    # serve the production build
+```
+
+## Deploy
+
+- **Vercel**: import the repo; framework "Vite". `vercel.json` already rewrites all routes to `index.html`.
+- **Netlify**: build command `npm run build`, publish directory `dist`. `public/_redirects` handles routing.
+
+## Adding to it
+
+Content is data, so most changes need no UI work:
+- New category, item or symptom → `src/data/categories.ts`
+- New rule → one `add(path, points, reason)` line in `src/engine/engine.ts` (the reason shows up in the Why? ledger automatically)
+- New plan steps, repurpose ideas, materials or common problems → `src/data/guides.ts`
+- New page → `src/pages/` plus one `<Route>` in `src/App.tsx`

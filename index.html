@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fix It First — Repair, reuse, repurpose, replace or recycle?</title>
+    <meta name="description" content="A guided decision assistant that compares all five circular-economy paths for any broken item, and shows exactly why one comes out on top." />
+    <meta name="theme-color" content="#24574A" />
+    <meta property="og:title" content="Fix It First" />
+    <meta property="og:description" content="Throw it out? Fix it first. Explainable decisions for broken and worn-out things." />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..800&family=Atkinson+Hyperlegible:wght@400;700&family=Caveat:wght@500;600&display=swap" rel="stylesheet" />
+    <script>
+      // Apply the saved or system theme before first paint, so there is never a flash of the wrong theme.
+      (function () {
+        try {
+          var t = localStorage.getItem('fif-theme');
+          if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          document.documentElement.dataset.theme = t;
+        } catch (e) {
+          document.documentElement.dataset.theme = 'light';
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <noscript>Fix It First needs JavaScript to run its decision engine.</noscript>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
