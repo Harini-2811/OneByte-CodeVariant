@@ -1,4 +1,4 @@
-import { CATEGORIES, getItem } from './categories';
+import { CATEGORIES, isPowered, itemFor, recycleFor, shopFor } from './categories';
 import type { Answers, CategoryId, PathId } from './types';
 
 export interface Step {
@@ -34,6 +34,8 @@ export const REPURPOSE_IDEAS: RepurposeIdea[] = [
   { id: 'pan-tray', category: 'kitchen', from: 'Worn-out pan', to: 'Plant tray or bird bath', effort: 1, time: '20 minutes', materials: ['Pebbles'], safety: 'Never cook with a pan whose coating is peeling.', steps: ['Remove the handle', 'Add pebbles', 'Use under pots or fill with water'] },
   { id: 'jar-pens', category: 'kitchen', from: 'Chipped jar', to: 'Pen and brush holder', effort: 1, time: '15 minutes', materials: ['Sandpaper', 'Paint (optional)'], safety: 'Sand any sharp chips smooth first.', steps: ['Sand the chipped edge', 'Paint or wrap it', 'Use on your desk'] },
   { id: 'bag-pouch', category: 'accessories', from: 'Old bag', to: 'Storage pouches', effort: 2, time: '2 hours', materials: ['Sewing kit', 'Zips from the bag'], safety: 'None.', steps: ['Unpick the panels', 'Reuse its zips', 'Sew small pouches'] },
+  { id: 'other-parts', category: 'other', from: 'Anything broken', to: 'Spare-parts donor', effort: 2, time: '1 hour', materials: ['Screwdriver', 'Labelled bags'], safety: 'Remove batteries and anything sharp first.', steps: ['Take off useful parts: screws, knobs, cables, fabric', 'Label and store them', 'Recycle the rest'] },
+  { id: 'other-makers', category: 'other', from: 'Anything still sound', to: 'Project material for a school or maker space', effort: 1, time: '30 minutes', materials: ['A bag or box'], safety: 'Mention any faults when you hand it over.', steps: ['Clean it', 'Ask a local school, college or maker space', 'Drop it off'] },
   { id: 'strap-keys', category: 'accessories', from: 'Watch strap', to: 'Key holder', effort: 1, time: '15 minutes', materials: ['Key ring'], safety: 'None.', steps: ['Remove the buckle', 'Loop it through a key ring', 'Fix with the buckle pin'] },
 ];
 
@@ -96,9 +98,9 @@ export interface PlanContent {
 
 export function planFor(path: PathId, a: Answers, mode: 'diy' | 'pro', hazard: boolean): PlanContent {
   const cat = CATEGORIES[a.category];
-  const item = getItem(a.category, a.itemType);
+  const item = itemFor(a);
   const thing = item.name.toLowerCase();
-  const usesData = a.category === 'electronics';
+  const usesData = a.category === 'electronics' || (a.category === 'other' && !!a.powered);
 
   if (path === 'repair') {
     if (mode === 'diy' && !hazard) {
@@ -108,7 +110,7 @@ export function planFor(path: PathId, a: Answers, mode: 'diy' | 'pro', hazard: b
           { title: 'Check the warranty', detail: a.warranty === 'no' ? 'You said it is out of warranty, so a DIY fix will not void anything.' : 'If it is still covered, a free repair beats DIY. Check before opening it.' },
           { title: 'Get the tools and part', detail: 'You will need the tools listed on the bench. Buy the exact part for your model.' },
           { title: 'Follow a guide for your model', detail: 'Search for a step-by-step repair guide for your exact model. Photograph every step as you go.' },
-          { title: 'Test, then recycle the old part', detail: `Test it before closing up. Take the broken part to ${cat.recycleWhere}.` },
+          { title: 'Test, then recycle the old part', detail: `Test it before closing up. Take the broken part to ${recycleFor(a)}.` },
         ],
         notesTitle: 'Tools for this job',
         notes: cat.diyTools,
@@ -119,7 +121,7 @@ export function planFor(path: PathId, a: Answers, mode: 'diy' | 'pro', hazard: b
     return {
       steps: [
         { title: 'Note the symptoms', detail: 'Write down exactly what happens and when. It speeds up diagnosis and avoids paying for guesswork.' },
-        { title: a.warranty === 'no' ? 'Find a local repair shop' : 'Try the warranty first', detail: a.warranty === 'no' ? `Look for a ${cat.repairShop} nearby and ask two of them for a quote.` : 'Contact the brand service centre with your bill. Repairs under warranty are usually free.' },
+        { title: a.warranty === 'no' ? 'Find a local repair shop' : 'Try the warranty first', detail: a.warranty === 'no' ? `Look for a ${shopFor(a)} nearby and ask two of them for a quote.` : 'Contact the brand service centre with your bill. Repairs under warranty are usually free.' },
         { title: 'Ask the right questions', detail: 'Is the part new or refurbished? Is the repair guaranteed? How long will it take?' },
         { title: usesData ? 'Back up and protect your data' : 'Agree the price first', detail: usesData ? 'Back up and sign out of accounts before you hand it over.' : 'Agree a price in writing before work starts.' },
         { title: 'Keep the bill', detail: 'A repair bill helps if the same fault comes back, and when you sell it later.' },
@@ -127,7 +129,7 @@ export function planFor(path: PathId, a: Answers, mode: 'diy' | 'pro', hazard: b
       notesTitle: 'Questions for the shop',
       notes: ['Is the part new or refurbished?', 'Is the repair guaranteed?', 'Can I have the old part back?'],
       tip: hazard ? 'Because of the safety issue, do not attempt this yourself. Tell the technician about it upfront.' : 'A fair repair usually costs well under half the price of a new one.',
-      links: [{ label: `Find a ${cat.repairShop} nearby`, href: mapLink(cat.repairShop) }, { label: 'Find a repair café', href: mapLink('repair cafe') }],
+      links: [{ label: `Find a ${shopFor(a)} nearby`, href: mapLink(shopFor(a)) }, { label: 'Find a repair café', href: mapLink('repair cafe') }],
     };
   }
 
@@ -152,10 +154,10 @@ export function planFor(path: PathId, a: Answers, mode: 'diy' | 'pro', hazard: b
     return {
       steps: [
         { title: 'Pick an idea', detail: 'Start with the simplest one below. You can always try another later.' },
-        { title: 'Make it safe', detail: `Remove ${a.category === 'electronics' || a.category === 'appliances' || a.category === 'cables' ? 'batteries, cables and' : ''} sharp edges or anything that could break.` },
+        { title: 'Make it safe', detail: `Remove ${isPowered(a) ? 'batteries, cables and' : ''} sharp edges or anything that could break.` },
         { title: 'Gather materials', detail: 'Most ideas need basic tools and things you already own.' },
         { title: 'Make it', detail: 'Give yourself a free afternoon or a weekend.' },
-        { title: 'Recycle the leftovers', detail: `Whatever you do not use goes to ${cat.recycleWhere}.` },
+        { title: 'Recycle the leftovers', detail: `Whatever you do not use goes to ${recycleFor(a)}.` },
       ],
       notesTitle: 'Ideas for this item',
       notes: ideas.map((i) => `${i.from.toLowerCase()} into ${i.to.toLowerCase()}`),
@@ -170,7 +172,7 @@ export function planFor(path: PathId, a: Answers, mode: 'diy' | 'pro', hazard: b
         { title: 'Sell or trade in the old one', detail: 'Even broken items have value as parts. Many brands offer exchange discounts.' },
         { title: 'Look at refurbished first', detail: 'Certified refurbished is cheaper and has a far lower footprint than new.' },
         { title: 'Check repairability', detail: 'Choose a model with available spare parts and a real warranty.' },
-        { title: 'Recycle what is left', detail: `If nobody wants the old one, take it to ${cat.recycleWhere}.` },
+        { title: 'Recycle what is left', detail: `If nobody wants the old one, take it to ${recycleFor(a)}.` },
       ],
       notesTitle: 'Buy smarter',
       notes: ['Refurbished first', 'Trade in the old one', 'Check for spare parts'],
@@ -179,13 +181,13 @@ export function planFor(path: PathId, a: Answers, mode: 'diy' | 'pro', hazard: b
     };
   }
 
-  const isE = a.category === 'electronics' || a.category === 'appliances' || a.category === 'cables';
+  const isE = isPowered(a);
   return {
     steps: [
       { title: 'Make it safe', detail: hazard ? 'Stop using it now. Keep it in a cool, open place away from anything flammable.' : 'Stop using anything damaged.' },
       { title: isE ? 'Wipe data and remove batteries' : 'Empty and clean it', detail: isE ? 'Factory reset anything with accounts. Remove batteries and tape the terminals.' : 'Clean items are easier to recycle.' },
       { title: 'Separate the materials', detail: 'Metal, plastic, glass, wood and fabric are recycled differently.' },
-      { title: 'Drop it off', detail: `Take it to ${cat.recycleWhere}.` },
+      { title: 'Drop it off', detail: `Take it to ${recycleFor(a)}.` },
       { title: 'Never use household bins', detail: isE ? 'Batteries and electronics in household waste can start fires.' : 'Sorted materials are far more likely to be recycled.' },
     ],
     notesTitle: 'Before you drop it off',

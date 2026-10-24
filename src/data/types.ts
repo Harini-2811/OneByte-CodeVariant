@@ -1,5 +1,5 @@
 export type PathId = 'repair' | 'reuse' | 'repurpose' | 'replace' | 'recycle';
-export type CategoryId = 'electronics' | 'appliances' | 'furniture' | 'clothing' | 'cables' | 'kitchen' | 'accessories';
+export type CategoryId = 'electronics' | 'appliances' | 'furniture' | 'clothing' | 'cables' | 'kitchen' | 'accessories' | 'other';
 export type SketchKind = 'laptop' | 'phone' | 'chair' | 'table' | 'jacket' | 'shoe' | 'kettle' | 'fan' | 'pan' | 'bag' | 'plug' | 'headphones' | 'box';
 
 /** How a symptom affects the decision. */
@@ -70,6 +70,12 @@ export interface Answers {
   time: TimeAvail;
   priority: Priority;
   repairAccess: Access;
+  /** Typed by the user when the category is "Something else". */
+  customCategory?: string;
+  /** Rough price of a new one, typed for "Other" items. */
+  customPrice?: number;
+  /** For "Something else": does it run on electricity or batteries? */
+  powered?: boolean;
 }
 
 export type ReasonKind = 'base' | 'plus' | 'minus' | 'block';

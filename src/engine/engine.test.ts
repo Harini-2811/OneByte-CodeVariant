@@ -65,6 +65,21 @@ describe('decision engine', () => {
     expect(r.reasons.repair.some((x) => x.label.includes('60%'))).toBe(true);
   });
 
+  it('scores an item the user typed in, scaled by its price', () => {
+    const a = defaultAnswers();
+    Object.assign(a, { category: 'other', itemType: 'other', name: 'Guitar', customCategory: 'Musical instrument', customPrice: 8000, symptoms: { 'broken-part': 1 } });
+    const r = evaluate(a);
+    expect(r.top).toBe('repair');
+    expect(r.reasons.repair[0].label).toContain('musical instrument');
+  });
+
+  it('handles an Other item inside a known category', () => {
+    const a = defaultAnswers();
+    Object.assign(a, { category: 'electronics', itemType: 'other', name: 'Printer', customPrice: 12000, symptoms: { 'no-sound': 1 } });
+    const r = evaluate(a);
+    expect(r.scores[r.top]).toBeGreaterThan(0);
+  });
+
   it('keeps every score within 0 to 99', () => {
     const a = preset('jacket');
     a.priority = 'time';

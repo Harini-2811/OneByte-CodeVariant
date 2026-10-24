@@ -6,7 +6,7 @@
  * verbatim, so no score is ever a black box. The engine is pure (no DOM, no state) so it can be
  * re-run instantly for "What if?" changes and unit-tested.
  */
-import { CATEGORIES, getItem } from '../data/categories';
+import { CATEGORIES, categoryName, itemFor, shopFor } from '../data/categories';
 import { PATH_ORDER } from '../data/paths';
 import type { Answers, PathId, Reason, Result, Severity, Tradeoff } from '../data/types';
 import { rupeeShort, rupeeRange } from './format';
@@ -19,7 +19,7 @@ export function emptyScores(): Record<PathId, number> {
 
 /** Repair cost grows with the worst severity selected. */
 export function repairEstimate(a: Answers): number {
-  const item = getItem(a.category, a.itemType);
+  const item = itemFor(a);
   const sevs = Object.values(a.symptoms);
   const worst = sevs.length ? Math.max(...sevs) : 1;
   const hardCount = CATEGORIES[a.category].symptoms.filter((s) => s.type === 'hard' && a.symptoms[s.id]).length;
@@ -30,14 +30,14 @@ export function repairEstimate(a: Answers): number {
 
 export function evaluate(a: Answers): Result {
   const cat = CATEGORIES[a.category];
-  const item = getItem(a.category, a.itemType);
+  const item = itemFor(a);
   const scores = emptyScores();
   const reasons: Record<PathId, Reason[]> = { repair: [], reuse: [], repurpose: [], replace: [], recycle: [] };
   const blocked: Partial<Record<PathId, string>> = {};
 
   for (const p of PATH_ORDER) {
     scores[p] = cat.base[p];
-    reasons[p].push({ label: `Starting point for ${cat.name.toLowerCase()}`, delta: cat.base[p], kind: 'base' });
+    reasons[p].push({ label: `Starting point for ${categoryName(a).toLowerCase()}`, delta: cat.base[p], kind: 'base' });
   }
   const add = (p: PathId, delta: number, label: string) => {
     if (!delta) return;
@@ -109,7 +109,7 @@ export function evaluate(a: Answers): Result {
   /* ---- skills and access ---- */
   if (a.diy === 0) add('repair', a.repairAccess === 'yes' ? -3 : -8, "You'd rather not fix it yourself");
   if (a.diy === 2 && !hazard) { add('repair', 10, "You're happy to fix it yourself"); add('repurpose', 10, "You're happy to make things"); }
-  if (a.repairAccess === 'yes') add('repair', 6, `A ${cat.repairShop} is nearby`);
+  if (a.repairAccess === 'yes') add('repair', 6, `A ${shopFor(a)} is nearby`);
   if (a.repairAccess === 'no' && a.diy < 2) add('repair', -6, 'No repair shop nearby');
 
   /* ---- money ---- */
@@ -155,7 +155,7 @@ export function evaluate(a: Answers): Result {
 }
 
 function tradeoffs(a: Answers, est: number, hazard: boolean): Record<PathId, Tradeoff> {
-  const item = getItem(a.category, a.itemType);
+  const item = itemFor(a);
   const diy = a.diy === 2 && !hazard;
   const hard = CATEGORIES[a.category].symptoms.some((s) => s.type === 'hard' && a.symptoms[s.id]);
   const r50 = (n: number) => Math.max(50, Math.round(n / 50) * 50);
@@ -187,5 +187,5 @@ export function defaultAnswers(): Answers {
 }
 
 export function itemLabel(a: Answers): string {
-  return a.name.trim() || getItem(a.category, a.itemType).name;
+  return a.name.trim() || itemFor(a).name;
 }

@@ -1,5 +1,5 @@
-import { CATEGORIES, CATEGORY_ORDER } from '../data/categories';
-import type { CategoryId } from '../data/types';
+import { CATEGORIES, CATEGORY_ORDER, getItem, isCustom, itemFor } from '../data/categories';
+import type { Answers, CategoryId, SketchKind } from '../data/types';
 
 /** Extra words people use for items, mapped to [category, item type]. */
 const SYNONYMS: Record<string, [CategoryId, string]> = {
@@ -51,4 +51,11 @@ export function guess(text: string): Guess | null {
     if (ids.has(id) && words.some((w) => t.includes(w))) { symptom = id; break; }
   }
   return { category, itemType, symptom };
+}
+
+/** Picks a drawing for the mat. Typed items get a matching sketch if we recognise the word, otherwise a parcel. */
+export function sketchFor(a: Answers): SketchKind {
+  if (!isCustom(a)) return itemFor(a).sketch;
+  const g = guess(a.name);
+  return g ? getItem(g.category, g.itemType).sketch : 'box';
 }

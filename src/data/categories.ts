@@ -1,4 +1,4 @@
-import type { Category, CategoryId, ItemType } from './types';
+import type { Answers, Category, CategoryId, ItemType } from './types';
 
 /**
  * Category knowledge base. Prices are typical Indian retail and repair ranges in rupees, and CO2e
@@ -182,13 +182,74 @@ export const CATEGORIES: Record<CategoryId, Category> = {
     recycleWhere: 'separate bins for fabric, metal and plastic',
     diyTools: ['Needle and heavy thread', 'Zip slider replacement', 'Small screwdriver', 'Strong glue'],
   },
+  other: {
+    id: 'other',
+    name: 'Something else',
+    blurb: 'Anything not listed. Just type it in.',
+    base: { repair: 42, reuse: 36, repurpose: 32, replace: 32, recycle: 28 },
+    items: [],
+    symptoms: [
+      { id: 'not-working', label: 'Stopped working', type: 'fix' },
+      { id: 'broken-part', label: 'A part is broken or missing', type: 'fix' },
+      { id: 'loose', label: 'Loose or wobbly', type: 'fix' },
+      { id: 'cracked', label: 'Cracked or badly damaged', type: 'hard' },
+      { id: 'worn', label: 'Worn out', type: 'hard' },
+      { id: 'cosmetic', label: 'Scratched or faded', type: 'cosmetic' },
+      { id: 'unwanted', label: 'Works, just not needed', type: 'unwanted' },
+      { id: 'unsafe', label: 'Unsafe: sparks, smoke or sharp edges', type: 'hazard' },
+    ],
+    repairShop: 'local repair shop',
+    recycleWhere: 'a local recycler or scrap dealer',
+    diyTools: ['Screwdriver set', 'Strong glue', 'Tape and clamps', 'Replacement parts for your model'],
+  },
 };
 
-export const CATEGORY_ORDER: CategoryId[] = ['electronics', 'appliances', 'furniture', 'clothing', 'cables', 'kitchen', 'accessories'];
+export const CATEGORY_ORDER: CategoryId[] = ['electronics', 'appliances', 'furniture', 'clothing', 'cables', 'kitchen', 'accessories', 'other'];
+
+export const OTHER_ITEM = 'other';
+
+const median = (xs: number[]) => { const s = [...xs].sort((x, y) => x - y); return s[Math.floor(s.length / 2)]; };
+
+/** Builds an item the user typed in, using typical cost ratios from its category. */
+export function customItem(cat: CategoryId, name: string, price?: number): ItemType {
+  const own = CATEGORIES[cat].items;
+  const pool = own.length ? own : Object.values(CATEGORIES).flatMap((c) => c.items);
+  const p = price && price > 0 ? price : median(pool.map((i) => i.newPrice));
+  const lo = median(pool.map((i) => i.repair[0] / i.newPrice));
+  const hi = median(pool.map((i) => i.repair[1] / i.newPrice));
+  const co2 = median(pool.map((i) => i.co2 / i.newPrice));
+  const r50 = (n: number) => Math.max(50, Math.round(n / 50) * 50);
+  return { id: OTHER_ITEM, name: name.trim() || 'Your item', sketch: 'box', newPrice: p, repair: [r50(p * lo), r50(p * hi)], co2: Math.max(0.5, Math.round(p * co2 * 10) / 10) };
+}
 
 export function getItem(cat: CategoryId, itemId: string): ItemType {
   const c = CATEGORIES[cat];
-  return c.items.find((i) => i.id === itemId) ?? c.items[0];
+  return c.items.find((i) => i.id === itemId) ?? c.items[0] ?? customItem(cat, '');
+}
+
+type ItemAnswers = Pick<Answers, 'category' | 'itemType' | 'name' | 'customPrice' | 'customCategory' | 'powered'>;
+
+export const isCustom = (a: ItemAnswers) => a.category === 'other' || a.itemType === OTHER_ITEM;
+
+/** The item for any answers, whether it is a listed item or one the user typed. */
+export function itemFor(a: ItemAnswers): ItemType {
+  return isCustom(a) ? customItem(a.category, a.name, a.customPrice) : getItem(a.category, a.itemType);
+}
+
+export function categoryName(a: ItemAnswers): string {
+  return a.category === 'other' ? (a.customCategory?.trim() || 'Something else') : CATEGORIES[a.category].name;
+}
+
+export function isPowered(a: ItemAnswers): boolean {
+  return a.category === 'other' ? !!a.powered : ['electronics', 'appliances', 'cables'].includes(a.category);
+}
+
+export function shopFor(a: ItemAnswers): string {
+  return a.category === 'other' && a.powered ? 'local electrical repair shop' : CATEGORIES[a.category].repairShop;
+}
+
+export function recycleFor(a: ItemAnswers): string {
+  return a.category === 'other' && a.powered ? 'an authorised e-waste collector' : CATEGORIES[a.category].recycleWhere;
 }
 
 export const AGE_LABELS = ['Under 1 year', '1 to 3 years', '3 to 5 years', '5 to 8 years', '8+ years'];
