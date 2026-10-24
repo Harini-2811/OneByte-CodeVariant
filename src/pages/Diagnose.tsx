@@ -47,8 +47,10 @@ export default function Diagnose() {
       a.category = cat;
       a.itemType = cat === 'other' ? OTHER_ITEM : getItem(cat, params.get('item') ?? '').id;
       picked = true;
+      const nm = params.get('name');
+      if (nm) a.name = nm.slice(0, 40);
       const sym = params.get('sym');
-      if (sym && CATEGORIES[cat].symptoms.some((x) => x.id === sym)) { a.symptoms = { [sym]: 2 }; s = 2; }
+      if (sym && CATEGORIES[cat].symptoms.some((x) => x.id === sym)) { a.symptoms = { [sym]: 2 }; s = cat === 'other' && !nm ? 1 : 2; }
     }
     const note = params.get('note');
     if (note) { a.notes = note; if (!picked) setUnmatched(true); }

@@ -62,6 +62,8 @@ export interface Problem {
   id: string;
   category: CategoryId;
   itemType: string;
+  /** Prefills the item name, for items in "Something else". */
+  name?: string;
   symptom: string;
   title: string;
   note: string;
@@ -82,6 +84,49 @@ export const PROBLEMS: Problem[] = [
   { id: 'shoes', category: 'clothing', itemType: 'shoes', symptom: 'sole', title: 'Shoe sole coming off', note: 'A cobbler can re-glue or re-stitch it.', verdict: 'Easy repair', path: 'repair' },
   { id: 'cooker', category: 'kitchen', itemType: 'cooker', symptom: 'gasket', title: 'Cooker whistle leaks steam', note: 'A new gasket costs very little.', verdict: 'Easy repair', path: 'repair' },
   { id: 'table', category: 'furniture', itemType: 'table', symptom: 'unwanted', title: 'Table you no longer need', note: 'Someone nearby probably does.', verdict: 'Reuse it', path: 'reuse' },
+  { id: 'toy', category: 'other', itemType: 'other', name: 'Toy', symptom: 'broken-part', title: 'Toy with a broken part', note: 'Glue, a new screw or a spare part usually does it.', verdict: 'Easy repair', path: 'repair' },
+  { id: 'instrument', category: 'other', itemType: 'other', name: 'Guitar', symptom: 'not-working', title: "Instrument that won't play right", note: 'Strings, pegs and pads are cheap to replace.', verdict: 'Often worth repairing', path: 'repair' },
+];
+
+/* ---------------- tips for repair, reuse and replace ---------------- */
+
+export interface Tip {
+  id: string;
+  path: 'repair' | 'reuse' | 'replace';
+  /** 'all' means the tip applies to any item. */
+  category: CategoryId | 'all';
+  title: string;
+  summary: string;
+  points: string[];
+}
+
+export const TIPS: Tip[] = [
+  // repair
+  { id: 'r-charge', path: 'repair', category: 'electronics', title: "Phone or laptop won't charge", summary: 'Usually the cable, the adapter or lint in the port.', points: ['Try a different cable, adapter and socket', 'Switch it off, then clear the port gently with a dry toothbrush', 'Still dead? A port or battery swap at a repair shop is usually affordable'] },
+  { id: 'r-slow', path: 'repair', category: 'electronics', title: 'Speed up a slow laptop', summary: 'Most slow laptops need tidying or one cheap upgrade.', points: ['Remove apps that start automatically', 'Keep at least 20% of the storage free', 'An SSD or extra memory can make an old laptop feel new'] },
+  { id: 'r-kettle', path: 'repair', category: 'appliances', title: "Kettle that won't heat", summary: 'Often a contact or thermostat fault, not the whole kettle.', points: ['Check the socket and the plug fuse first', 'Unplug, then clean the contacts on the base', 'A thermostat swap at a repair shop costs far less than a new kettle'] },
+  { id: 'r-fan', path: 'repair', category: 'appliances', title: 'Quiet a noisy fan', summary: 'Dust and dry bearings cause most of the noise.', points: ['Unplug it and clean the blades and guard', 'Add a drop of sewing-machine oil to the motor shaft', 'Tighten the blade screw and the guard clips'] },
+  { id: 'r-chair', path: 'repair', category: 'furniture', title: 'Fix a wobbly chair', summary: 'Loose joints are the usual cause, and an easy fix.', points: ['Tighten every screw and bolt first', 'Work wood glue into loose joints', 'Clamp or tie it tight and leave it overnight'] },
+  { id: 'r-seam', path: 'repair', category: 'clothing', title: 'Mend a torn seam', summary: 'A ten-minute job by hand, or a quick visit to a tailor.', points: ['Turn the garment inside out', 'Use a backstitch along the original seam line', 'Or ask a tailor; small seam repairs cost very little'] },
+  { id: 'r-plug', path: 'repair', category: 'cables', title: 'Loose plug on a cable', summary: 'Only for cables with no visible damage to the wire.', points: ['Unplug it before you touch anything', 'Fit a replacement plug rated for the device', 'If any wire is exposed, replace the cable instead'] },
+  { id: 'r-gasket', path: 'repair', category: 'kitchen', title: 'Cooker leaking steam', summary: 'A worn gasket is the usual culprit, and very cheap.', points: ['Check the brand and size printed on the lid', 'Buy a matching gasket and safety valve', 'Soak the new gasket in water before fitting it'] },
+  { id: 'r-zip', path: 'repair', category: 'accessories', title: 'Zip that keeps splitting', summary: 'The slider has usually just loosened.', points: ['Squeeze the slider gently closed with pliers', 'Run it up and down a few times to test', 'If the teeth are damaged, a tailor or cobbler can replace the zip'] },
+  { id: 'r-any', path: 'repair', category: 'all', title: 'Before any repair', summary: 'Three checks that save time and money.', points: ['Check the warranty or guarantee first', 'Photograph each step as you take it apart', 'Ask for a quote before agreeing to any repair'] },
+  // reuse
+  { id: 'u-local', path: 'reuse', category: 'all', title: 'Pass it on nearby', summary: 'Someone close by usually needs exactly what you have.', points: ['Ask family, friends and neighbours first', 'Post it in your building or neighbourhood group', 'Use a local resale or giveaway app'] },
+  { id: 'u-devices', path: 'reuse', category: 'electronics', title: 'Donate working devices', summary: 'Schools and charities can put old devices straight to use.', points: ['Back up, sign out and factory reset it', 'Include the charger and cable', 'Ask local schools, NGOs and community centres'] },
+  { id: 'u-clothes', path: 'reuse', category: 'clothing', title: 'Donate wearable clothes', summary: 'Clean, wearable clothes help someone immediately.', points: ['Wash and fold them', 'Keep pairs of shoes together', 'Give them to a clothing bank, shelter or donation drive'] },
+  { id: 'u-furniture', path: 'reuse', category: 'furniture', title: 'Find furniture a new home', summary: 'Furniture is costly to replace, so it is easy to pass on.', points: ['Offer it to new tenants or students moving in', 'Hostels and community halls often need tables and chairs', 'Take clear photos and give accurate measurements'] },
+  { id: 'u-appliances', path: 'reuse', category: 'appliances', title: 'Give appliances a second home', summary: 'A working appliance you have replaced is still useful.', points: ['Clean it and test that it works safely', 'Offer it to a hostel, shelter or someone setting up a home', 'Include the manual if you still have it'] },
+  { id: 'u-kitchen', path: 'reuse', category: 'kitchen', title: 'Reuse jars and containers', summary: 'Glass and steel containers last for decades.', points: ['Use them for dry storage at home', 'Take them to refill and bulk stores', 'Offer spares to local food sellers'] },
+  { id: 'u-swap', path: 'reuse', category: 'accessories', title: 'Swap instead of storing', summary: 'Bags, watches and accessories are popular at swaps.', points: ['Look for a local swap event or group', 'Clean and check zips and straps first', 'Bundle small items together'] },
+  { id: 'u-role', path: 'reuse', category: 'all', title: 'Give it a new job at home', summary: 'Something you have outgrown can still do a simpler task.', points: ['An old phone becomes a music player or alarm clock', 'A spare chair becomes a bedside table', 'An old laptop becomes a family recipe or video screen'] },
+  // replace
+  { id: 'p-refurb', path: 'replace', category: 'all', title: 'Look at refurbished first', summary: 'Cheaper than new, with a far smaller footprint.', points: ['Choose certified refurbished with a warranty', 'Check the return policy before you buy', 'Compare the price with a new one to be sure it is worth it'] },
+  { id: 'p-repairable', path: 'replace', category: 'all', title: 'Buy something you can repair', summary: 'Your next item should outlive this one.', points: ['Check spare parts are sold for the model', 'Look for a service centre near you', 'Prefer screws over glue where you can'] },
+  { id: 'p-trade', path: 'replace', category: 'all', title: 'Trade in the old one', summary: 'Even a broken item can lower the price of the new one.', points: ['Ask about exchange offers when you buy', 'Sell working parts separately', 'Recycle whatever is left properly'] },
+  { id: 'p-battery', path: 'replace', category: 'electronics', title: 'Choose a replaceable battery', summary: 'The battery is usually the first part to wear out.', points: ['Check whether the battery can be replaced', 'Look up the price of a replacement battery', 'Avoid models where the battery is glued in'] },
+  { id: 'p-clothes', path: 'replace', category: 'clothing', title: 'Buy fewer, better clothes', summary: 'Well-made clothes are easier to repair and last longer.', points: ['Check the stitching and the fabric weight', 'Prefer natural or single-fibre fabrics, which recycle better', 'Buy second-hand where you can'] },
 ];
 
 /* ---------------- action plans ---------------- */

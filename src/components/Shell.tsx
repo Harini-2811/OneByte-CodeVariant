@@ -92,7 +92,6 @@ export function Footer() {
     <footer className="ftr">
       <div className="wrap ftr-in">
         <span><span className="disp" style={{ fontWeight: 800, color: 'var(--text)' }}>Fix It First</span>, a decision assistant for repair, reuse, repurpose, replace and recycle.</span>
-        <span>Your items never leave this browser. Costs and footprints are estimates.</span>
       </div>
     </footer>
   );
